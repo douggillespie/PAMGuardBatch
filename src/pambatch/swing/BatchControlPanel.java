@@ -1,7 +1,5 @@
 package pambatch.swing;
 
-import java.awt.FlowLayout;
-
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -14,16 +12,17 @@ public class BatchControlPanel {
 	private BatchControl batchControl;
 	PSFXControlPanel psfxPanel;
 
-	public BatchControlPanel(BatchControl batchControl) {
-		this.batchControl = batchControl;
-		mainPanel = new BatchPanel();
-		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-		psfxPanel = new PSFXControlPanel(batchControl);
-		mainPanel.add(psfxPanel);
-	}
-	
-	public JComponent getMainPanel() {
-		return mainPanel;
-	}
+//	private BatchControlPanel(BatchControl batchControl) {
+//		this.batchControl = batchControl;
+//		mainPanel = new BatchPanel();
+//		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+//		
+//		psfxPanel = new PSFXControlPanel(batchControl);
+//		mainPanel.add(psfxPanel);
+//	}
+//	
+//	public JComponent getMainPanel() {
+//		return mainPanel;
+//	}
 
 }

@@ -3,8 +3,9 @@ package pambatch.swing;
 import java.awt.LayoutManager;
 
 import PamView.panel.PamPanel;
+import pambatch.config.BatchParameters;
 
-public class BatchPanel extends PamPanel {
+public abstract class BatchPanel extends PamPanel {
 
 	public BatchPanel() {
 		super();
@@ -14,4 +15,5 @@ public class BatchPanel extends PamPanel {
 		super(layout);
 	}
 
+	public abstract void setParams(BatchParameters batchParams);
 }

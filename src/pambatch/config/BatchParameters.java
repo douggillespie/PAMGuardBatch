@@ -7,6 +7,8 @@ public class BatchParameters  implements Serializable, Cloneable{
 
 	public static final long serialVersionUID = 1L;
 	
+	
+	public boolean useThisPSFX = false;
 	/**
 	 * Master psfx file
 	 */
@@ -20,7 +22,7 @@ public class BatchParameters  implements Serializable, Cloneable{
 	/**
 	 * List of datasets to hit with this process. 
 	 */
-	private ArrayList<BatchDataset> batchDataSets = new ArrayList();
+	private ArrayList<BatchJobInfo> batchDataSets = new ArrayList();
 	
 	/**
 	 * List of commands / offline tasks to run on the datasets. 
@@ -29,6 +31,48 @@ public class BatchParameters  implements Serializable, Cloneable{
 
 	public BatchParameters() {
 		
+	}
+
+	/**
+	 * @return the useThisPSFX
+	 */
+	public boolean isUseThisPSFX() {
+		return useThisPSFX;
+	}
+
+	/**
+	 * @param useThisPSFX the useThisPSFX to set
+	 */
+	public void setUseThisPSFX(boolean useThisPSFX) {
+		this.useThisPSFX = useThisPSFX;
+	}
+
+	/**
+	 * @return the masterPSFX
+	 */
+	public String getMasterPSFX() {
+		return masterPSFX;
+	}
+
+	/**
+	 * @param masterPSFX the masterPSFX to set
+	 */
+	public void setMasterPSFX(String masterPSFX) {
+		this.masterPSFX = masterPSFX;
+	}
+
+	/**
+	 * @return the maxConcurrentJobs
+	 */
+	public int getMaxConcurrentJobs() {
+		return maxConcurrentJobs;
+	}
+
+	/**
+	 * @param maxConcurrentJobs the maxConcurrentJobs to set
+	 */
+	public void setMaxConcurrentJobs(int maxConcurrentJobs) {
+		this.maxConcurrentJobs = maxConcurrentJobs;
 	}
 
 }
