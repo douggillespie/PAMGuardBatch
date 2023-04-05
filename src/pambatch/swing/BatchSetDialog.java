@@ -43,6 +43,8 @@ public class BatchSetDialog extends PamDialog {
 	
 	private ArrayList<BatchJobInfo> returnList;
 
+	private static PamFileChooser sharedChooser;
+
 	private static final int SOURCES = 0;
 	private static final int BINARY = 1;
 	private static final int DATABASE = 2;
@@ -65,7 +67,7 @@ public class BatchSetDialog extends PamDialog {
 		mainPanel.add(new JLabel("Typical source: ", JLabel.RIGHT), c);
 		c.gridx++;
 		c.gridwidth = 1;
-		mainPanel.add(typicalSource = new JLabel("something here ....."), c);
+		mainPanel.add(typicalSource = new JLabel(" ..."), c);
 
 		c.gridy++;
 		c.gridx = 0;
@@ -92,7 +94,7 @@ public class BatchSetDialog extends PamDialog {
 		mainPanel.add(typicalDatabase = new JLabel(), c);
 		
 		
-		
+		setResizable(true);
 		setDialogComponent(mainPanel);
 	}
 	
@@ -139,7 +141,7 @@ public class BatchSetDialog extends PamDialog {
 	}
 
 	private void inventDatabaseNames() {
-		PamFileChooser fc = new PamFileChooser();
+		PamFileChooser fc = getSharedChooser();
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
 		File startLoc = null;
@@ -160,7 +162,7 @@ public class BatchSetDialog extends PamDialog {
 	}
 	
 	private void inventDestBinaryFolders() {
-		PamFileChooser fc = new PamFileChooser();
+		PamFileChooser fc = getSharedChooser();
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
 		File startLoc = null;
@@ -194,7 +196,9 @@ public class BatchSetDialog extends PamDialog {
 			return;
 		}
 		File firstSource = sourceSubFolders.get(0).getSourceSubFolder();
+		
 		String firstOut = inventBinaryName(sourceSubFolders.get(0).getSourceSubFolder(), binRoot);
+		firstOut = trimFolderName(binRoot, new File(firstOut));
 		typicalBinary.setText(firstOut);
 	}
 	
@@ -233,6 +237,8 @@ public class BatchSetDialog extends PamDialog {
 			typicalDatabase.setText(null);
 		}
 		else {
+			File temp = new File(dbName);
+			dbName = trimFolderName(binRoot, temp);
 			String firstOut = dbName + "  (file end will be corrected at run time if needed)";
 			typicalDatabase.setText(firstOut);
 		}
@@ -261,7 +267,7 @@ public class BatchSetDialog extends PamDialog {
 	 * Look for source data. 
 	 */
 	private void searchSourceFolder() {
-		PamFileChooser fc = new PamFileChooser();
+		PamFileChooser fc = getSharedChooser();
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
 		File startLoc = null;
@@ -279,17 +285,47 @@ public class BatchSetDialog extends PamDialog {
 		}
 	}
 	
+	/**
+	 * File choosers seem to take ages to create, so use a shared one. 
+	 * @return
+	 */
+	PamFileChooser getSharedChooser() {
+		if (sharedChooser == null) {
+			sharedChooser = new PamFileChooser();
+		}
+		return sharedChooser;
+	}
+	
+	
 	private void findSubFolderData(File sourceFolder) {
 		sourceSubFolders = batchControl.findSourceSubFolders(sourceFolder);
 		if (sourceSubFolders == null || sourceSubFolders.size() == 0) {
 			typicalSource.setText("No sub folders found with audio data files");
 		}
 		else {
-			String str = String.format("%d sub folders contain audio files, e.g. %s", sourceSubFolders.size(), sourceSubFolders.get(0).getSourceSubFolder());
+			String sub = trimFolderName(sourceFolder, sourceSubFolders.get(0).getSourceSubFolder());
+			String str = String.format("%d sub folders contain audio files, e.g. %s", sourceSubFolders.size(), sub);
 			typicalSource.setText(str);
 			showBinaryName();
 			showDatabaseName();
 		}
+	}
+	
+	private String trimFolderName(File rootFolder, File subFolder) {
+		if (rootFolder == null || subFolder == null) {
+			if (subFolder == null) {
+				return null;
+			}
+			else {
+				return subFolder.getAbsolutePath();
+			}
+		}
+		String root = rootFolder.getAbsolutePath();
+		String sub = subFolder.getAbsolutePath();
+		if (sub.startsWith(root)) {
+			sub = "." + sub.substring(root.length());
+		}
+		return sub;
 	}
 	
 	private class JobSet {

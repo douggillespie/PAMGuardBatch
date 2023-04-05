@@ -2,6 +2,7 @@ package pambatch;
 
 import PamguardMVC.PamDataUnit;
 import pambatch.config.BatchJobInfo;
+import pambatch.ctrl.JobController;
 
 /**
  * Batch job data will be held in data units which will make management easier and 
@@ -16,6 +17,8 @@ public class BatchDataUnit extends PamDataUnit {
 	private BatchJobInfo batchJobInfo;
 	
 	private BatchDataUnit conflictingJob;
+
+	private JobController jobController;
 	
 	public BatchDataUnit(long timeMilliseconds, BatchJobInfo batchJobInfo) {
 		super(timeMilliseconds);
@@ -48,6 +51,21 @@ public class BatchDataUnit extends PamDataUnit {
 	 */
 	public void setConflictingJob(BatchDataUnit conflictingJob) {
 		this.conflictingJob = conflictingJob;
+	}
+
+	/**
+	 * Set a job controller when processing starts. 
+	 * @param jobController
+	 */
+	public void setJobController(JobController jobController) {
+		this.jobController = jobController;
+	}
+
+	/**
+	 * @return the jobController. Will be null if job is not running
+	 */
+	public JobController getJobController() {
+		return jobController;
 	}
 
 

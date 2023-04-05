@@ -81,19 +81,22 @@ public class PSFXControlPanel extends BatchPanel {
 				setUseThisPsfx();
 			}
 		});
-		setLayout( new GridBagLayout());
+		setLayout(new BorderLayout());
+		JPanel psfxPanel = new PamPanel();
+		this.add(psfxPanel, BorderLayout.WEST);
+		psfxPanel.setLayout( new GridBagLayout());
 		GridBagConstraints c = new PamGridBagContraints();
-		add(new PamLabel(" PSFX Configuration to run  "), c);
+		psfxPanel.add(new PamLabel(" PSFX Configuration to run  "), c);
+//		c.gridx++;
+//		psfxPanel.add(useThisPSFX, c);
 		c.gridx++;
-		add(useThisPSFX, c);
+		psfxPanel.add(browseButton, c);
 		c.gridx++;
-		add(browseButton, c);
-		c.gridx++;
-		add(openButton, c);
+		psfxPanel.add(openButton, c);
 		c.gridx = 0;
 		c.gridy++;
 		c.gridwidth = 4;
-		add(psfxName, c);
+		psfxPanel.add(psfxName, c);
 
 		//		JPanel topPanel = new BatchPanel(new BorderLayout());
 		//		JPanel tlPanel = new BatchPanel(new BorderLayout());

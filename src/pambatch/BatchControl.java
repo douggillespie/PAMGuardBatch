@@ -1,5 +1,6 @@
 package pambatch;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -23,8 +24,10 @@ import PamguardMVC.dataOffline.OfflineDataLoadInfo;
 import binaryFileStorage.BinaryStore;
 import generalDatabase.DBControl;
 import generalDatabase.DBControlUnit;
+import pambatch.comms.BatchMulticastRX;
 import pambatch.config.BatchJobInfo;
 import pambatch.config.BatchParameters;
+import pambatch.ctrl.JobController;
 import pambatch.swing.BatchSetDialog;
 import pambatch.swing.BatchTabPanel;
 import pambatch.swing.JobDialog;
@@ -44,6 +47,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	private SwingMenus swingMenus;
 	
 	private PamAudioFileFilter audioFileFilter = new PamAudioFileFilter();
+	
+	private BatchMulticastRX batchMulticastRX;
 	
 	/**
 	 * @return the batchProcess
@@ -68,6 +73,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		if (batchTabPanel != null) {
 			batchTabPanel.setParams(batchParameters);
 		}
+		batchMulticastRX = new BatchMulticastRX(this);
 	}
 
 	@Override
@@ -171,6 +177,12 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		command.add(pgExe);
 		command.add("-psf");
 		command.add(psfxFile);
+		
+//		if (2>1) {
+//			String oneCmd = batchProcess.makeOneLinecommand(command);
+//			Desktop.getDesktop().
+//		}
+//		else {
 
 		final ProcessBuilder builder = new ProcessBuilder(command);
 		try {
@@ -179,17 +191,23 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+//		}
 		
 	}
 	
-	public ArrayList<String> getBatchJobLaunchCommand(BatchJobInfo batchJobInfo) {
+	/**
+	 * This is all launch commands APART from those needed to start PAMGaurd and anything 
+	 * to do with control specific params such as UDP settings, etc. 
+	 * @param batchJobInfo
+	 * @return
+	 */
+	public ArrayList<String> getBatchJobLaunchParams(BatchJobInfo batchJobInfo) {
 		String pgExe = findStartExecutable();
 		if (pgExe == null) {
 			return null;
 		}
 		ArrayList<String> command = new ArrayList<>();
-		command.add(pgExe);
+//		command.add(pgExe);
 		command.add("-psf");
 		String psf = batchParameters.getMasterPSFX();
 		if (psf == null) {
@@ -207,7 +225,11 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			command.add(batchJobInfo.outputDatabaseName);
 		}
 		command.add("-autostart");
-		command.add("-autoexit");
+		/**
+		 * Probably don't want to auto exit so that the monitor can check the job status
+		 * and see clearly that it's finished rather than crashed, then tell it to exit.
+		 */
+		command.add("-autoexit"); 
 		command.add(ReprocessStoreChoice.paramName);
 		command.add("OVERWRITEALL");
 		
@@ -236,8 +258,12 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 */
 	private void loadExistingJobs() {
 //		batchProcess.getBatchDataBlock().loadViewerData(0, Long.MAX_VALUE, null);
+		DBControlUnit dbControl = findDatabaseControl();
+		if (dbControl == null) {
+			return;
+		}
 		OfflineDataLoadInfo dlinf = new OfflineDataLoadInfo(0, Long.MAX_VALUE);
-		findDatabaseControl().loadData(batchProcess.getBatchDataBlock(), dlinf, null);
+		dbControl.loadData(batchProcess.getBatchDataBlock(), dlinf, null);
 		checkConflictingJobs();
 	}
 
@@ -433,6 +459,20 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		}
 		return false;
 	}
+
+	/**
+	 * @return the batchParameters
+	 */
+	public BatchParameters getBatchParameters() {
+		return batchParameters;
+	}
+
+	@Override
+	public void pamClose() {
+		super.pamClose();
+		batchMulticastRX.stopReceiving();
+	}
+
 	
 }
 ;
