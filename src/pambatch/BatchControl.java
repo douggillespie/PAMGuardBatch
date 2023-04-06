@@ -37,6 +37,7 @@ import pambatch.config.BatchParameters;
 import pambatch.ctrl.JobController;
 import pambatch.swing.BatchSetDialog;
 import pambatch.swing.BatchTabPanel;
+import pambatch.swing.CheckExistingDialog;
 import pambatch.swing.JobDialog;
 import pambatch.swing.SwingMenus;
 import pamguard.Pamguard;
@@ -102,7 +103,34 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	public void notifyModelChanged(int changeType) {
 		super.notifyModelChanged(changeType);
 		if (changeType == PamController.INITIALIZATION_COMPLETE) {
-			loadExistingJobs();
+			loadExistingJobs(); // loads from database
+			checkRunningJobs();
+		}
+	}
+
+	/**
+	 * Wait a bit to see if anything is running and trying to send
+	 * status data in 
+	 */
+	private void checkRunningJobs() {
+		/**
+		 * this is only called at startup, so nothing shold be running unless it
+		 * crashed half way through. If this job crashed, then it's not actually Running, 
+		 * so set it to unknown. If this crashed, then perhaps it is running !
+		 * first set all jobs that are running to unknown.  
+		 */
+		ArrayList<BatchDataUnit> jobsList = getBatchProcess().getBatchDataBlock().getDataCopy();
+		int nRunning = 0;
+		for (BatchDataUnit job : jobsList) {
+			if (job.getBatchJobInfo().jobStatus == BatchJobStatus.RUNNING) {
+				job.getBatchJobInfo().jobStatus = BatchJobStatus.UNKNOWN;
+				getBatchProcess().getBatchDataBlock().updatePamData(job, System.currentTimeMillis());
+				nRunning++;
+			}
+		}
+		if (nRunning > 0) {
+			// then open the progress dialog to block things for a bit ...
+			CheckExistingDialog.showDialog(getGuiFrame(), this, 15);
 		}
 	}
 
@@ -263,9 +291,13 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		 * Probably don't want to auto exit so that the monitor can check the job status
 		 * and see clearly that it's finished rather than crashed, then tell it to exit.
 		 */
+		if (batchParameters.isNoGUI()) {
+			command.add("-nogui");
+		}
 //		command.add("-autoexit"); 
 		command.add(ReprocessStoreChoice.paramName);
-		command.add("OVERWRITEALL");
+		String repChoice = batchParameters.getReprocessChoice().name();
+		command.add(repChoice);
 		command.add("-multicast");
 		command.add(batchParameters.getMulticastAddress());
 		command.add(String.format("%d", batchParameters.getMulticastPort()));

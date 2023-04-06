@@ -47,6 +47,8 @@ public class PSFXControlPanel extends BatchPanel {
 	private BatchControl batchControl;
 
 	private BatchParameters batchParams;
+	
+	private JCheckBox noGUI;
 
 	//	private JTextField jreName;
 	//	
@@ -98,6 +100,16 @@ public class PSFXControlPanel extends BatchPanel {
 		c.gridwidth = 4;
 		psfxPanel.add(psfxName, c);
 
+		c.gridx = 0;
+		c.gridy++;
+		noGUI = new JCheckBox("Run processes without GUI (Headless)");
+		noGUI.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setNoGUI();
+			}
+		});
+		psfxPanel.add(noGUI, c);
 		//		JPanel topPanel = new BatchPanel(new BorderLayout());
 		//		JPanel tlPanel = new BatchPanel(new BorderLayout());
 		//		JPanel trPanel = new BatchPanel(new GridBagLayout());
@@ -126,6 +138,12 @@ public class PSFXControlPanel extends BatchPanel {
 		boolean isUseThis = useThisPSFX.isSelected();
 		browseButton.setEnabled(!isUseThis);
 		psfxName.setEnabled(isUseThis);
+	}
+
+	private void setNoGUI() {
+		if (batchParams != null) {
+			batchParams.setNoGUI(noGUI.isSelected());
+		}
 	}
 
 	protected void setUseThisPsfx() {

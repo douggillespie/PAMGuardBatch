@@ -3,6 +3,9 @@ package pambatch.config;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import PamController.fileprocessing.ReprocessManager;
+import PamController.fileprocessing.ReprocessStoreChoice;
+
 public class BatchParameters  implements Serializable, Cloneable{
 
 	public static final long serialVersionUID = 1L;
@@ -32,15 +35,19 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 */
 	private String multicastAddress = defaultMulticastAddr;
 	
-	/**
-	 * List of datasets to hit with this process. 
-	 */
-	private ArrayList<BatchJobInfo> batchDataSets = new ArrayList();
+	private boolean noGUI;
 	
-	/**
-	 * List of commands / offline tasks to run on the datasets. 
-	 */
-	private ArrayList<BatchCommand> batchCommands = new ArrayList();
+//	/**
+//	 * List of datasets to hit with this process. 
+//	 */
+//	private ArrayList<BatchJobInfo> batchDataSets = new ArrayList();
+//	
+//	/**
+//	 * List of commands / offline tasks to run on the datasets. 
+//	 */
+//	private ArrayList<BatchCommand> batchCommands = new ArrayList();
+	
+	private ReprocessStoreChoice reprocessChoice = ReprocessStoreChoice.CONTINUECURRENTFILE;
 
 	public BatchParameters() {
 		
@@ -120,6 +127,37 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 */
 	public void setMulticastAddress(String multicastAddress) {
 		this.multicastAddress = multicastAddress;
+	}
+
+	/**
+	 * @return the reprocessChoice
+	 */
+	public ReprocessStoreChoice getReprocessChoice() {
+		if (reprocessChoice == null) {
+			reprocessChoice = ReprocessStoreChoice.CONTINUECURRENTFILE;
+		}
+		return reprocessChoice;
+	}
+
+	/**
+	 * @param reprocessChoice the reprocessChoice to set
+	 */
+	public void setReprocessChoice(ReprocessStoreChoice reprocessChoice) {
+		this.reprocessChoice = reprocessChoice;
+	}
+
+	/**
+	 * @return the noGUI
+	 */
+	public boolean isNoGUI() {
+		return noGUI;
+	}
+
+	/**
+	 * @param noGUI the noGUI to set
+	 */
+	public void setNoGUI(boolean noGUI) {
+		this.noGUI = noGUI;
 	}
 
 }

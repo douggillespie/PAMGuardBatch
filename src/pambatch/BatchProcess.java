@@ -58,8 +58,8 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 			return;
 		}
 		// response will be asynchronous, so don't wait for anything. 
+//		System.out.println("Sending Batch job multicast command: " + BatchStatusCommand.commandId);
 		mcController.sendCommand(BatchStatusCommand.commandId);
-//		mcController.sendCommand("status");
 	}
 
 	/**
@@ -171,6 +171,21 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		return countJobState(BatchJobStatus.RUNNING);
 	}
 	
+//	/**
+//	 * Find the next job that hasn't started yet.
+//	 * @return next job to run. 
+//	 */
+//	private BatchDataUnit findNextIncomplete() {
+//		List<BatchDataUnit> jobList = batchDataBlock.copyDataList();
+//		int n = 0;
+//		for (BatchDataUnit aJob : jobList) {
+//			if (aJob.getBatchJobInfo().jobStatus != BatchJobStatus.COMPLETE) {
+//				return aJob;
+//			}
+//		}
+//		return null;
+//	}
+	
 	/**
 	 * Find the next job that hasn't started yet.
 	 * @return next job to run. 
@@ -179,7 +194,8 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		List<BatchDataUnit> jobList = batchDataBlock.copyDataList();
 		int n = 0;
 		for (BatchDataUnit aJob : jobList) {
-			if (aJob.getBatchJobInfo().jobStatus == BatchJobStatus.NOTSTARTED) {
+			BatchJobStatus jobStatus = aJob.getBatchJobInfo().jobStatus;
+			if (jobStatus == BatchJobStatus.NOTSTARTED || jobStatus == BatchJobStatus.UNKNOWN || jobStatus == null) {
 				return aJob;
 			}
 		}
@@ -269,8 +285,8 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 
 	@Override
 	public void updateJobStatus(BatchDataUnit batchDataUnit) {
-		// TODO Auto-generated method stub
-		batchDataBlock.notifyObservers();
+		batchDataBlock.updatePamData(batchDataUnit, System.currentTimeMillis());
+//		batchDataBlock.notifyObservers();
 	}
 
 }
