@@ -9,11 +9,13 @@ import java.net.MulticastSocket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 
+import pambatch.config.BatchParameters;
+
 public class MulticastSendTest {
 
 
-	int mcPort = BatchMulticastRX.mcPort;
-	String mcIPStr = BatchMulticastRX.mcIPStr;
+	int mcPort = BatchParameters.defaultMulticastPort;
+	String mcIPStr = BatchParameters.defaultMulticastAddr;
 	private DatagramSocket rxSocket;	
 
 	public static void main(String[] args) {

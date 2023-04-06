@@ -7,6 +7,9 @@ public class BatchParameters  implements Serializable, Cloneable{
 
 	public static final long serialVersionUID = 1L;
 	
+	public static final int defaultMulticastPort = 12346;
+	
+	public static final String defaultMulticastAddr = "230.1.1.1";
 	
 	public boolean useThisPSFX = false;
 	/**
@@ -18,6 +21,16 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 * Max number of concurrent jobs that can run (per machine)
 	 */
 	private int maxConcurrentJobs = 3;
+	
+	/**
+	 * Port ID for multicast comms with many jobs
+	 */
+	private int multicastPort = defaultMulticastPort;
+	
+	/**
+	 * Address for multicast comms with many jobs
+	 */
+	private String multicastAddress = defaultMulticastAddr;
 	
 	/**
 	 * List of datasets to hit with this process. 
@@ -73,6 +86,40 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 */
 	public void setMaxConcurrentJobs(int maxConcurrentJobs) {
 		this.maxConcurrentJobs = maxConcurrentJobs;
+	}
+
+	/**
+	 * @return the multicastPort
+	 */
+	public int getMulticastPort() {
+		if (multicastPort == 0) {
+			multicastPort = defaultMulticastPort;
+		}
+		return multicastPort;
+	}
+
+	/**
+	 * @param multicastPort the multicastPort to set
+	 */
+	public void setMulticastPort(int multicastPort) {
+		this.multicastPort = multicastPort;
+	}
+
+	/**
+	 * @return the multicastAddress
+	 */
+	public String getMulticastAddress() {
+		if (multicastAddress == null) {
+			multicastAddress = defaultMulticastAddr;
+		}
+		return multicastAddress;
+	}
+
+	/**
+	 * @param multicastAddress the multicastAddress to set
+	 */
+	public void setMulticastAddress(String multicastAddress) {
+		this.multicastAddress = multicastAddress;
 	}
 
 }

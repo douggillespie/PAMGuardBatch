@@ -27,7 +27,18 @@ public class BatchJobInfo implements Serializable, Cloneable {
 	 * Output database
 	 */
 	public String outputDatabaseName;
+
+	/**
+	 * Job status
+	 */
+	public BatchJobStatus jobStatus = BatchJobStatus.NOTSTARTED;
 	
+	/**
+	 * Percentage of job completed (probably %% of files rather than of actual data). 
+	 */
+	public double percentDone;
+
+	private int jobId2;
 	
 	
 	public BatchJobInfo() {
@@ -41,15 +52,6 @@ public class BatchJobInfo implements Serializable, Cloneable {
 		this.outputDatabaseName = outputDatabaseName;
 	}
 
-	/**
-	 * Job status
-	 */
-	public BatchJobStatus jobStatus = BatchJobStatus.NOTSTARTED;
-	
-	/**
-	 * Percentage of job completed (probably %% of files rather than of actual data). 
-	 */
-	public double percentDone;
 
 	@Override
 	public BatchJobInfo clone() {
@@ -59,6 +61,21 @@ public class BatchJobInfo implements Serializable, Cloneable {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	/**
+	 * Set the jobid2 (jobid1 is the database index of the accompanying data unit)
+	 * @param jobId2
+	 */
+	public void setJobId2(int jobId2) {
+		this.jobId2 = jobId2;
+	}
+
+	/**
+	 * @return the jobId2
+	 */
+	public int getJobId2() {
+		return jobId2;
 	}
 
 }

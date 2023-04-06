@@ -5,10 +5,13 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.DatagramPacket;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Random;
 
 import javax.swing.JPopupMenu;
+import javax.swing.Timer;
 
 import Acquisition.FolderInputSystem;
 import Acquisition.pamAudio.PamAudioFileFilter;
@@ -18,13 +21,17 @@ import PamController.PamController;
 import PamController.PamGUIManager;
 import PamController.PamSettingManager;
 import PamController.PamSettings;
+import PamController.command.BatchStatusCommand;
+import PamController.command.ExitCommand;
 import PamController.fileprocessing.ReprocessStoreChoice;
 import PamView.PamTabPanel;
 import PamguardMVC.dataOffline.OfflineDataLoadInfo;
 import binaryFileStorage.BinaryStore;
 import generalDatabase.DBControl;
 import generalDatabase.DBControlUnit;
+import networkTransfer.send.NetworkSender;
 import pambatch.comms.BatchMulticastRX;
+import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
 import pambatch.config.BatchParameters;
 import pambatch.ctrl.JobController;
@@ -48,8 +55,11 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	
 	private PamAudioFileFilter audioFileFilter = new PamAudioFileFilter();
 	
-	private BatchMulticastRX batchMulticastRX;
+//	private BatchMulticastRX batchMulticastRX;
+	private BatchMulticastController multicastController;
 	
+	private Random randomJobId;
+		
 	/**
 	 * @return the batchProcess
 	 */
@@ -73,7 +83,9 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		if (batchTabPanel != null) {
 			batchTabPanel.setParams(batchParameters);
 		}
-		batchMulticastRX = new BatchMulticastRX(this);
+		multicastController = new BatchMulticastController(this);
+		randomJobId = new Random(System.currentTimeMillis());
+//		batchMulticastRX = new BatchMulticastRX(this);
 	}
 
 	@Override
@@ -114,6 +126,13 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 * @return null or the pamguard.exe file. 
 	 */
 	public String findStartExecutable() {
+		// first look to see if we're running from the IDE and if so, also launch
+		// new configs from the ide
+		String ideStr = eclipseLaunchLine();
+		if (ideStr != null) {
+			return ideStr;
+		}
+		
 		// first look in the current directory and see if it's there. 
 		String userDir = System.getProperty("user.dir");
 		if (userDir != null) {
@@ -129,6 +148,20 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		}
 		// give up !
 		return null;
+	}
+	
+	/**
+	 * Copy of the Eclipse launch line. Used at the debugging stage of this. 
+	 * @return
+	 */
+	private String eclipseLaunchLine() {
+		String ell = "\"C:\\Program Files\\Java\\jdk-19\\bin\\java.exe\" "
+				+ "-Xmx6g "
+//				+ "-Djava.library.path=lib64 "
+				+ "-classpath \"C:\\Users\\dg50\\source\\repos\\PAMGuardDG\\target\\classes;C:\\Users\\dg50\\.m2\\repository\\io\\github\\macster110\\jpamutils\\0.0.56\\jpamutils-0.0.56.jar;C:\\Users\\dg50\\.m2\\repository\\uk\\me\\berndporr\\iirj\\1.1\\iirj-1.1.jar;C:\\Users\\dg50\\.m2\\repository\\us\\hebi\\matlab\\mat\\mfl-core\\0.5.6\\mfl-core-0.5.6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\json\\json\\20201115\\json-20201115.jar;C:\\Users\\dg50\\.m2\\repository\\io\\github\\macster110\\jdl4pam\\0.0.94\\jdl4pam-0.0.94.jar;C:\\Users\\dg50\\.m2\\repository\\ai\\djl\\api\\0.15.0\\api-0.15.0.jar;C:\\Users\\dg50\\.m2\\repository\\com\\google\\code\\gson\\gson\\2.8.9\\gson-2.8.9.jar;C:\\Users\\dg50\\.m2\\repository\\ai\\djl\\pytorch\\pytorch-engine\\0.15.0\\pytorch-engine-0.15.0.jar;C:\\Users\\dg50\\.m2\\repository\\ai\\djl\\pytorch\\pytorch-native-auto\\1.9.1\\pytorch-native-auto-1.9.1.jar;C:\\Users\\dg50\\.m2\\repository\\ai\\djl\\tensorflow\\tensorflow-engine\\0.15.0\\tensorflow-engine-0.15.0.jar;C:\\Users\\dg50\\.m2\\repository\\ai\\djl\\tensorflow\\tensorflow-api\\0.15.0\\tensorflow-api-0.15.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\bytedeco\\javacpp\\1.5.6\\javacpp-1.5.6.jar;C:\\Users\\dg50\\.m2\\repository\\ai\\djl\\tensorflow\\tensorflow-native-auto\\2.4.1\\tensorflow-native-auto-2.4.1.jar;C:\\Users\\dg50\\.m2\\repository\\gov\\nist\\math\\jama\\1.0.3\\jama-1.0.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-controls\\16\\javafx-controls-16.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-controls\\16\\javafx-controls-16-win.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-graphics\\16\\javafx-graphics-16.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-graphics\\16\\javafx-graphics-16-win.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-base\\16\\javafx-base-16.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-base\\16\\javafx-base-16-win.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-swing\\16\\javafx-swing-16.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-swing\\16\\javafx-swing-16-win.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-media\\16\\javafx-media-16.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-media\\16\\javafx-media-16-win.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-web\\16\\javafx-web-16.jar;C:\\Users\\dg50\\.m2\\repository\\org\\openjfx\\javafx-web\\16\\javafx-web-16-win.jar;C:\\Users\\dg50\\.m2\\repository\\net\\synedra\\validatorfx\\0.4.0\\validatorfx-0.4.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-compress\\1.19\\commons-compress-1.19.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-csv\\1.7\\commons-csv-1.7.jar;C:\\Users\\dg50\\.m2\\repository\\commons-io\\commons-io\\2.6\\commons-io-2.6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-lang3\\3.9\\commons-lang3-3.9.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-math3\\3.6.1\\commons-math3-3.6.1.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-math\\2.2\\commons-math-2.2.jar;C:\\Users\\dg50\\.m2\\repository\\commons-net\\commons-net\\3.6\\commons-net-3.6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\controlsfx\\controlsfx\\11.0.0\\controlsfx-11.0.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\kordamp\\ikonli\\ikonli-javafx\\12.2.0\\ikonli-javafx-12.2.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\kordamp\\ikonli\\ikonli-core\\12.2.0\\ikonli-core-12.2.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\kordamp\\ikonli\\ikonli-materialdesign2-pack\\12.2.0\\ikonli-materialdesign2-pack-12.2.0.jar;C:\\Users\\dg50\\.m2\\repository\\net\\sf\\geographiclib\\GeographicLib-Java\\1.50\\GeographicLib-Java-1.50.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt-main\\2.3.2\\gluegen-rt-main-2.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-android-aarch64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-android-armv6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-linux-amd64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-linux-armv6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-linux-armv6hf.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-linux-i586.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-macosx-universal.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-solaris-amd64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-solaris-i586.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-windows-amd64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\gluegen\\gluegen-rt\\2.3.2\\gluegen-rt-2.3.2-natives-windows-i586.jar;C:\\Users\\dg50\\.m2\\repository\\com\\healthmarketscience\\jackcess\\jackcess\\3.0.1\\jackcess-3.0.1.jar;C:\\Users\\dg50\\.m2\\repository\\commons-logging\\commons-logging\\1.2\\commons-logging-1.2.jar;C:\\Users\\dg50\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-databind\\2.10.1\\jackson-databind-2.10.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-annotations\\2.10.1\\jackson-annotations-2.10.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-core\\2.10.1\\jackson-core-2.10.1.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all-main\\2.3.2\\jogl-all-main-2.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-android-aarch64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-android-armv6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-linux-amd64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-linux-armv6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-linux-armv6hf.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-linux-i586.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-macosx-universal.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-solaris-amd64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-solaris-i586.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-windows-amd64.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jogamp\\jogl\\jogl-all\\2.3.2\\jogl-all-2.3.2-natives-windows-i586.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jflac\\jflac-codec\\1.5.2\\jflac-codec-1.5.2.jar;C:\\Users\\dg50\\.m2\\repository\\javax\\help\\javahelp\\2.0.05\\javahelp-2.0.05.jar;C:\\Users\\dg50\\.m2\\repository\\net\\java\\dev\\jna\\jna\\5.5.0\\jna-5.5.0.jar;C:\\Users\\dg50\\.m2\\repository\\net\\java\\dev\\jna\\jna-platform\\5.5.0\\jna-platform-5.5.0.jar;C:\\Users\\dg50\\.m2\\repository\\com\\jcraft\\jsch\\0.1.55\\jsch-0.1.55.jar;C:\\Users\\dg50\\.m2\\repository\\com\\fazecast\\jSerialComm\\2.5.3\\jSerialComm-2.5.3.jar;C:\\Users\\dg50\\.m2\\repository\\edu\\emory\\mathcs\\JTransforms\\2.4\\JTransforms-2.4.jar;C:\\Users\\dg50\\.m2\\repository\\com\\sun\\mail\\javax.mail\\1.6.2\\javax.mail-1.6.2.jar;C:\\Users\\dg50\\.m2\\repository\\javax\\activation\\activation\\1.1\\activation-1.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\diffplug\\matsim\\matfilerw\\3.1.1\\matfilerw-3.1.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\drewnoakes\\metadata-extractor\\2.12.0\\metadata-extractor-2.12.0.jar;C:\\Users\\dg50\\.m2\\repository\\com\\adobe\\xmp\\xmpcore\\6.0.6\\xmpcore-6.0.6.jar;C:\\Users\\dg50\\.m2\\repository\\mysql\\mysql-connector-java\\8.0.18\\mysql-connector-java-8.0.18.jar;C:\\Users\\dg50\\.m2\\repository\\com\\google\\protobuf\\protobuf-java\\3.17.0\\protobuf-java-3.17.0.jar;C:\\Users\\dg50\\.m2\\repository\\edu\\ucar\\netcdfAll\\4.6.14\\netcdfAll-4.6.14.jar;C:\\Users\\dg50\\.m2\\repository\\com\\opencsv\\opencsv\\5.0\\opencsv-5.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-text\\1.7\\commons-text-1.7.jar;C:\\Users\\dg50\\.m2\\repository\\commons-beanutils\\commons-beanutils\\1.9.4\\commons-beanutils-1.9.4.jar;C:\\Users\\dg50\\.m2\\repository\\commons-collections\\commons-collections\\3.2.2\\commons-collections-3.2.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-collections4\\4.4\\commons-collections4-4.4.jar;C:\\Users\\dg50\\.m2\\repository\\org\\postgresql\\postgresql\\42.2.24\\postgresql-42.2.24.jar;C:\\Users\\dg50\\.m2\\repository\\org\\checkerframework\\checker-qual\\3.5.0\\checker-qual-3.5.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-script-engine\\0.9.2725\\renjin-script-engine-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-core\\0.9.2725\\renjin-core-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-appl\\0.9.2725\\renjin-appl-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-blas\\0.9.2725\\renjin-blas-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-nmath\\0.9.2725\\renjin-nmath-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-math-common\\0.9.2725\\renjin-math-common-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-lapack\\0.9.2725\\renjin-lapack-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\gcc-runtime\\0.9.2725\\gcc-runtime-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\core\\1.1.2\\core-1.1.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\commons\\commons-vfs2\\2.0\\commons-vfs2-2.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\maven\\scm\\maven-scm-api\\1.4\\maven-scm-api-1.4.jar;C:\\Users\\dg50\\.m2\\repository\\org\\codehaus\\plexus\\plexus-utils\\1.5.6\\plexus-utils-1.5.6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\maven\\scm\\maven-scm-provider-svnexe\\1.4\\maven-scm-provider-svnexe-1.4.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\maven\\scm\\maven-scm-provider-svn-commons\\1.4\\maven-scm-provider-svn-commons-1.4.jar;C:\\Users\\dg50\\.m2\\repository\\regexp\\regexp\\1.3\\regexp-1.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\tukaani\\xz\\1.8\\xz-1.8.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-asm\\5.0.4b\\renjin-asm-5.0.4b.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-guava\\17.0b\\renjin-guava-17.0b.jar;C:\\Users\\dg50\\.m2\\repository\\com\\sun\\codemodel\\codemodel\\2.6\\codemodel-2.6.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\stats\\0.9.2725\\stats-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\renjin-gnur-runtime\\0.9.2725\\renjin-gnur-runtime-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\methods\\0.9.2725\\methods-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\tools\\0.9.2725\\tools-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\datasets\\0.9.2725\\datasets-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\utils\\0.9.2725\\utils-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\grDevices\\0.9.2725\\grDevices-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jfree\\jfreesvg\\3.3\\jfreesvg-3.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\graphics\\0.9.2725\\graphics-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\org\\renjin\\compiler\\0.9.2725\\compiler-0.9.2725.jar;C:\\Users\\dg50\\.m2\\repository\\net\\sourceforge\\f2j\\arpack_combined_all\\0.1\\arpack_combined_all-0.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_ref-osx-x86_64\\1.1\\netlib-native_ref-osx-x86_64-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\native_ref-java\\1.1\\native_ref-java-1.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\jniloader\\1.1\\jniloader-1.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_ref-linux-x86_64\\1.1\\netlib-native_ref-linux-x86_64-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_ref-linux-i686\\1.1\\netlib-native_ref-linux-i686-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_ref-win-x86_64\\1.1\\netlib-native_ref-win-x86_64-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_ref-win-i686\\1.1\\netlib-native_ref-win-i686-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_ref-linux-armhf\\1.1\\netlib-native_ref-linux-armhf-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_system-osx-x86_64\\1.1\\netlib-native_system-osx-x86_64-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\native_system-java\\1.1\\native_system-java-1.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_system-linux-x86_64\\1.1\\netlib-native_system-linux-x86_64-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_system-linux-i686\\1.1\\netlib-native_system-linux-i686-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_system-linux-armhf\\1.1\\netlib-native_system-linux-armhf-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_system-win-x86_64\\1.1\\netlib-native_system-win-x86_64-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\com\\github\\fommil\\netlib\\netlib-native_system-win-i686\\1.1\\netlib-native_system-win-i686-1.1-natives.jar;C:\\Users\\dg50\\.m2\\repository\\org\\slf4j\\slf4j-api\\1.8.0-beta4\\slf4j-api-1.8.0-beta4.jar;C:\\Users\\dg50\\.m2\\repository\\org\\slf4j\\slf4j-nop\\1.8.0-beta4\\slf4j-nop-1.8.0-beta4.jar;C:\\Users\\dg50\\.m2\\repository\\org\\docx4j\\docx4j-JAXB-ReferenceImpl\\11.1.3\\docx4j-JAXB-ReferenceImpl-11.1.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\docx4j\\docx4j-core\\11.1.3\\docx4j-core-11.1.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\docx4j\\docx4j-openxml-objects\\11.1.3\\docx4j-openxml-objects-11.1.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\docx4j\\docx4j-openxml-objects-pml\\11.1.3\\docx4j-openxml-objects-pml-11.1.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\docx4j\\docx4j-openxml-objects-sml\\11.1.3\\docx4j-openxml-objects-sml-11.1.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\plutext\\jaxb-svg11\\1.0.2\\jaxb-svg11-1.0.2.jar;C:\\Users\\dg50\\.m2\\repository\\net\\engio\\mbassador\\1.3.2\\mbassador-1.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\slf4j\\jcl-over-slf4j\\1.7.26\\jcl-over-slf4j-1.7.26.jar;C:\\Users\\dg50\\.m2\\repository\\commons-codec\\commons-codec\\1.12\\commons-codec-1.12.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\httpcomponents\\httpclient\\4.5.8\\httpclient-4.5.8.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\httpcomponents\\httpcore\\4.4.11\\httpcore-4.4.11.jar;C:\\Users\\dg50\\.m2\\repository\\org\\apache\\xmlgraphics\\xmlgraphics-commons\\2.3\\xmlgraphics-commons-2.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\docx4j\\org\\apache\\xalan-interpretive\\11.0.0\\xalan-interpretive-11.0.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\docx4j\\org\\apache\\xalan-serializer\\11.0.0\\xalan-serializer-11.0.0.jar;C:\\Users\\dg50\\.m2\\repository\\net\\arnx\\wmf2svg\\0.9.8\\wmf2svg-0.9.8.jar;C:\\Users\\dg50\\.m2\\repository\\org\\antlr\\antlr-runtime\\3.5.2\\antlr-runtime-3.5.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\antlr\\stringtemplate\\3.2.1\\stringtemplate-3.2.1.jar;C:\\Users\\dg50\\.m2\\repository\\antlr\\antlr\\2.7.7\\antlr-2.7.7.jar;C:\\Users\\dg50\\.m2\\repository\\com\\google\\errorprone\\error_prone_annotations\\2.3.3\\error_prone_annotations-2.3.3.jar;C:\\Users\\dg50\\.m2\\repository\\org\\glassfish\\jaxb\\jaxb-runtime\\2.3.2\\jaxb-runtime-2.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\glassfish\\jaxb\\txw2\\2.3.2\\txw2-2.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\com\\sun\\istack\\istack-commons-runtime\\3.0.8\\istack-commons-runtime-3.0.8.jar;C:\\Users\\dg50\\.m2\\repository\\org\\jvnet\\staxex\\stax-ex\\1.8.1\\stax-ex-1.8.1.jar;C:\\Users\\dg50\\.m2\\repository\\com\\sun\\xml\\fastinfoset\\FastInfoset\\1.2.16\\FastInfoset-1.2.16.jar;C:\\Users\\dg50\\.m2\\repository\\jakarta\\activation\\jakarta.activation-api\\1.2.1\\jakarta.activation-api-1.2.1.jar;C:\\Users\\dg50\\.m2\\repository\\jakarta\\xml\\bind\\jakarta.xml.bind-api\\2.3.2\\jakarta.xml.bind-api-2.3.2.jar;C:\\Users\\dg50\\.m2\\repository\\org\\xerial\\sqlite-jdbc\\3.28.0\\sqlite-jdbc-3.28.0.jar;C:\\Users\\dg50\\.m2\\repository\\net\\sf\\ucanaccess\\ucanaccess\\4.0.4\\ucanaccess-4.0.4.jar;C:\\Users\\dg50\\.m2\\repository\\org\\hsqldb\\hsqldb\\2.3.1\\hsqldb-2.3.1.jar;C:\\Users\\dg50\\.m2\\repository\\nz\\ac\\waikato\\cms\\weka\\weka-dev\\3.7.7\\weka-dev-3.7.7.jar;C:\\Users\\dg50\\.m2\\repository\\net\\sf\\squirrel-sql\\thirdparty-non-maven\\java-cup\\0.11a\\java-cup-0.11a.jar;C:\\Users\\dg50\\.m2\\repository\\org\\pentaho\\pentaho-commons\\pentaho-package-manager\\1.0.3\\pentaho-package-manager-1.0.3.jar;C:\\Users\\dg50\\.m2\\repository\\javax\\vecmath\\vecmath\\1.5.2\\vecmath-1.5.2.jar;C:\\Users\\dg50\\.m2\\repository\\pamguard\\org\\x3\\2.2.0\\x3-2.2.0.jar;C:\\Users\\dg50\\.m2\\repository\\it\\sauronsoftware\\jave\\1.0.2\\jave-1.0.2.jar;C:\\Users\\dg50\\.m2\\repository\\com\\synthbot\\jasiohost\\1.0.0\\jasiohost-1.0.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\springframework\\spring-core\\5.2.3.RELEASE\\spring-core-5.2.3.RELEASE.jar;C:\\Users\\dg50\\.m2\\repository\\org\\springframework\\spring-jcl\\5.2.3.RELEASE\\spring-jcl-5.2.3.RELEASE.jar;C:\\Users\\dg50\\.m2\\repository\\com\\1stleg\\jnativehook\\2.1.0\\jnativehook-2.1.0.jar;C:\\Users\\dg50\\.m2\\repository\\org\\swinglabs\\swingx\\swingx-all\\1.6.5-1\\swingx-all-1.6.5-1.jar;C:\\Users\\dg50\\.m2\\repository\\io\\github\\mkpaz\\atlantafx-base\\1.0.0\\atlantafx-base-1.0.0.jar\" "
+				+ " pamguard.Pamguard "
+				+ "-smru";
+		return ell;
 	}
 	
 	/**
@@ -198,10 +231,11 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	/**
 	 * This is all launch commands APART from those needed to start PAMGaurd and anything 
 	 * to do with control specific params such as UDP settings, etc. 
-	 * @param batchJobInfo
+	 * @param nextJob
 	 * @return
 	 */
-	public ArrayList<String> getBatchJobLaunchParams(BatchJobInfo batchJobInfo) {
+	public ArrayList<String> getBatchJobLaunchParams(BatchDataUnit nextJob) {
+		BatchJobInfo jobInfo = nextJob.getBatchJobInfo();
 		String pgExe = findStartExecutable();
 		if (pgExe == null) {
 			return null;
@@ -215,24 +249,32 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		}
 		command.add(psf);
 		command.add(FolderInputSystem.GlobalWavFolderArg);
-		command.add(batchJobInfo.soundFileFolder);
-		if (batchJobInfo.outputBinaryFolder != null) {
+		command.add(jobInfo.soundFileFolder);
+		if (jobInfo.outputBinaryFolder != null) {
 			command.add(BinaryStore.GlobalFolderArg);
-			command.add(batchJobInfo.outputBinaryFolder);
+			command.add(jobInfo.outputBinaryFolder);
 		}
-		if (batchJobInfo.outputDatabaseName != null) {
+		if (jobInfo.outputDatabaseName != null) {
 			command.add(DBControl.GlobalDatabaseNameArg);
-			command.add(batchJobInfo.outputDatabaseName);
+			command.add(jobInfo.outputDatabaseName);
 		}
 		command.add("-autostart");
 		/**
 		 * Probably don't want to auto exit so that the monitor can check the job status
 		 * and see clearly that it's finished rather than crashed, then tell it to exit.
 		 */
-		command.add("-autoexit"); 
+//		command.add("-autoexit"); 
 		command.add(ReprocessStoreChoice.paramName);
 		command.add("OVERWRITEALL");
-		
+		command.add("-multicast");
+		command.add(batchParameters.getMulticastAddress());
+		command.add(String.format("%d", batchParameters.getMulticastPort()));
+		command.add(NetworkSender.ID1);
+		command.add(String.format("%d", nextJob.getDatabaseIndex()));
+		int jobId2 = randomJobId.nextInt(10000); // generate a new random up to 4 digit integer
+		command.add(NetworkSender.ID2);
+		command.add(String.format("%d", jobId2));
+		jobInfo.setJobId2(jobId2);
 		
 		return command;
 	}
@@ -470,7 +512,108 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	@Override
 	public void pamClose() {
 		super.pamClose();
-		batchMulticastRX.stopReceiving();
+		multicastController.close();
+	}
+
+	/**
+	 * @return the multicastController
+	 */
+	public BatchMulticastController getMulticastController() {
+		return multicastController;
+	}
+
+	/**
+	 * Status data returned from a multicast request to all PAMGuard processes. 
+	 * @param packet
+	 */
+	public void newStatusPacket(DatagramPacket packet) {
+		if (packet == null || packet.getLength() == 0) {
+			return;
+		}
+		String data = new String(packet.getData(), 0, packet.getLength());
+		/*
+		 *  these strings coming back from multicast should be in the form
+		 *  commandname
+		 *  id1
+		 *  id1
+		 *  data fields ...
+		 *  separated by commas
+		 */
+		String[] commandBits = data.split(",");
+		if (commandBits.length < 4) {
+			System.out.println("Unknown data format from UDP: " + data);
+			return;
+		}
+		String command = commandBits[0].trim();
+		int id1 = 0, id2 = 0;
+		try {
+			id1 = Integer.valueOf(commandBits[1]);
+			id2 = Integer.valueOf(commandBits[2]);			
+		}
+		catch(NumberFormatException e) {
+			System.out.println("Invalid station id fields in : " + data);
+			return;
+		}
+		// now find the processing data unit for id1
+		BatchDataUnit jobData = batchProcess.getBatchDataBlock().findByDatabaseIndex(id1);
+		if (jobData == null) {
+			System.out.println("Unable to find batch job data for job id " + id1);
+			return;
+		}
+//		System.out.printf("Update for job id %d: %s\n", id1, data);
+		updateJobStatus(jobData, commandBits);
+		
+	}
+
+	/**
+	 * update job data and where necessary act on it. 
+	 * @param jobData
+	 * @param commandBits
+	 */
+	private void updateJobStatus(BatchDataUnit jobData, String[] commandBits) {
+		if (commandBits[0].trim().equals(BatchStatusCommand.commandId)) {
+			int nFiles = -1;
+			int iFile = 0;
+			int status = -1;
+			if (commandBits.length < 5) {
+				System.out.println("Command is too short");
+				return;
+			}
+			try {
+				nFiles = Integer.valueOf(commandBits[3]);
+				iFile = Integer.valueOf(commandBits[4]);
+				status = Integer.valueOf(commandBits[5]);
+			}
+			catch (NumberFormatException e) {
+			}
+			boolean complete = iFile == nFiles;
+			BatchJobStatus jobStatus = BatchJobStatus.UNKNOWN;
+			if (iFile == 0) {
+				jobStatus = BatchJobStatus.NOTSTARTED;
+			}
+			if (iFile == nFiles) {
+				jobStatus = BatchJobStatus.COMPLETE;
+				closeJob(jobData);
+			}
+			else {
+				jobStatus = BatchJobStatus.RUNNING;
+			}
+			double percent = iFile * 100. / nFiles;
+			BatchJobInfo jobInfo = jobData.getBatchJobInfo();
+			jobInfo.jobStatus = jobStatus;
+			jobInfo.percentDone = percent;
+			batchProcess.updateJobStatus(jobData);
+			
+		}
+	}
+
+	/**
+	 * A job is complete so tell it to exit.  
+	 * @param jobData
+	 */
+	private void closeJob(BatchDataUnit jobData) {
+		BatchJobInfo jobInfo = jobData.getBatchJobInfo();
+		multicastController.targetCommand(jobData.getDatabaseIndex(), jobInfo.getJobId2(), ExitCommand.commandId);
 	}
 
 	

@@ -23,22 +23,30 @@ public class LocalJobController extends JobController {
 		ArrayList<String> totalCommand = new ArrayList<>();
 		totalCommand.add(getBatchControl().findStartExecutable());
 		totalCommand.addAll(pamguardOptions);
+		
+		String singleLine = getOneLineCommand(totalCommand);
 
-		final ProcessBuilder builder = new ProcessBuilder(totalCommand);
 		Process jobProcess = null;
 		try {
-			jobProcess = builder.start();
-		} catch (IOException e) {
+			jobProcess = Runtime.getRuntime().exec(singleLine);
+		} catch (IOException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 			return false;
 		}
+
+//		final ProcessBuilder builder = new ProcessBuilder(totalCommand);
+//		try {
+//			jobProcess = builder.start();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//			return false;
+//		}
 		/*
 		 *  seems to have launched, so set up monitor threads to read the 
 		 *  output and error streams of the process. 
 		 */
-		getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.RUNNING;
-		updateJobStatus();
 		
 		InputStreamMonitor errMon = new InputStreamMonitor("Error", jobProcess.getErrorStream());
 		Thread t = new Thread(errMon);
@@ -48,9 +56,31 @@ public class LocalJobController extends JobController {
 		t = new Thread(ipMon);
 		t.start();
 
+		getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.RUNNING;
+		updateJobStatus();
+
 		return true;
 	}
 	
+	private String getOneLineCommand(ArrayList<String> totalCommand) {
+		if (totalCommand == null || totalCommand.size() == 0) {
+			return null;
+		}
+		String oneLine = totalCommand.get(0);
+		for (int i = 1; i < totalCommand.size(); i++) {
+			if (oneLine.endsWith(" ") == false) {
+				oneLine += " ";
+			}
+			String bit = totalCommand.get(i);
+			bit = bit.trim();
+			if (bit.contains(" ")) {
+				bit = "\"" + bit + "\"";
+			}
+			oneLine += bit;
+		}
+		return oneLine;
+	}
+
 	private class InputStreamMonitor implements Runnable {
 
 		private String streamType;
@@ -78,10 +108,10 @@ public class LocalJobController extends JobController {
 				 *  really use this to set complete. Need to do that using a more sophisticated 
 				 *  process monitor. 
 				 */
-				getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.COMPLETE;
+//				getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.COMPLETE;
 			}
 			catch (IOException e) {
-				getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.COMPLETE;
+//				getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.COMPLETE;
 			}
 			updateJobStatus();
 			

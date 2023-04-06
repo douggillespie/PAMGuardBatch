@@ -11,6 +11,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import pambatch.BatchControl;
+import pambatch.config.BatchParameters;
 
 /**
  * Makes a batch processing multicast receiver thread to get 
@@ -26,37 +27,65 @@ public class BatchMulticastRX {
 
 	private volatile boolean keepGoing = true;
 
-	public static final int mcPort = 12345;
-	public static final String mcIPStr = "230.1.1.1";
-	private MulticastSocket mcSocket = null;
+	private volatile MulticastSocket mcSocket = null;
+
+	private Thread rxThread;
 
 	public BatchMulticastRX(BatchControl batchControl) {
 		super();
 		this.batchControl = batchControl;
 
-		Thread t = new Thread(new Runnable() {
+	}
+	
+	public void startReceiver() {
+		stopReceiver();
+
+		rxThread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				runMulticastReceiver();
 			}
-		});
-		t.start();
+		}, "Batch Multicast RX");
+		
+		rxThread.start();
+	}
+	
+	public void stopReceiver() {
+		keepGoing = false;
+		if (mcSocket != null) {
+			mcSocket.close();
+		}
+		if (rxThread != null) {
+			try {
+				rxThread.join();
+			} catch (InterruptedException e) {
+//				e.printStackTrace();
+			}
+		}
+		mcSocket = null;
+		rxThread = null;
 	}
 
 	protected void runMulticastReceiver() {
+		
+		keepGoing = true;
+		
 		InetAddress mcIPAddress = null;
 		SocketAddress sockAddress;
+		
+		BatchParameters params = batchControl.getBatchParameters();
 		try {
-			mcIPAddress = InetAddress.getByName(mcIPStr);
-			sockAddress = new InetSocketAddress(mcIPAddress, mcPort);
-			mcSocket = new MulticastSocket(mcPort);
+			mcIPAddress = InetAddress.getByName(params.getMulticastAddress());
+			sockAddress = new InetSocketAddress(mcIPAddress, params.getMulticastPort());
+			mcSocket = new MulticastSocket(params.getMulticastPort());
 			System.out.println("Multicast Receiver running at:"
 					+ mcSocket.getLocalSocketAddress());
 			mcSocket.joinGroup(sockAddress, null);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
+			System.out.println("Multicast receiver errror " + e.getMessage());
 		}
 
 		DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
@@ -72,28 +101,24 @@ public class BatchMulticastRX {
 			InetAddress senderAddr = packet.getAddress();
 			int senderPort = packet.getPort();
 			System.out.printf("[Batch Multicast  Receiver] Receive from %s port %d:: %s\n", senderAddr.getHostAddress(), senderPort, msg);
-			if (Math.random() > -0.5) {
-				String reply = String.format("Thanks for message %s", msg);
-				DatagramPacket toSend = new DatagramPacket(reply.getBytes(), reply.length(), senderAddr, senderPort);
-				try {
-					DatagramSocket replySocket = new DatagramSocket();
-					replySocket.send(toSend);
-					replySocket.close();
-				} catch (SocketException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+//			if (Math.random() > -0.5) {
+//				String reply = String.format("Thanks for message %s", msg);
+//				DatagramPacket toSend = new DatagramPacket(reply.getBytes(), reply.length(), senderAddr, senderPort);
+//				try {
+//					DatagramSocket replySocket = new DatagramSocket();
+//					replySocket.send(toSend);
+//					replySocket.close();
+//				} catch (SocketException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
 		}
+		mcSocket = null;
 
-	}
-
-	public void stopReceiving() {
-		keepGoing = false;
-		mcSocket.close();
 	}
 
 }

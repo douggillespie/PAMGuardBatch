@@ -1,5 +1,7 @@
 package pambatch;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,11 +10,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 
+import PamController.PamController;
+import PamController.command.BatchStatusCommand;
+import PamView.dialog.warn.WarnOnce;
 import PamguardMVC.PamProcess;
+import pambatch.comms.BatchMulticastController;
 import pambatch.ctrl.JobController;
 import pambatch.ctrl.JobMonitor;
 import pambatch.logging.BatchLogging;
+import warnings.PamWarning;
+import warnings.WarningSystem;
 
 public class BatchProcess extends PamProcess implements JobMonitor {
 
@@ -23,6 +32,8 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 	private BatchLogging batchLogging;
 
 	private volatile boolean keepProcessing;
+	
+	private Timer jobCheckTimer;
 
 	public BatchProcess(BatchControl batchControl) {
 		super(batchControl, null);
@@ -31,6 +42,24 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		batchLogging = new BatchLogging(batchControl, batchDataBlock);
 		batchDataBlock.SetLogging(batchLogging);
 		addOutputDataBlock(batchDataBlock);
+		jobCheckTimer = new Timer(5000, new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				checkAllJobStatus();
+			}
+		});
+		jobCheckTimer.start();
+	}
+
+	protected void checkAllJobStatus() {
+		// send out a message on multicast and see what comes back. 
+		BatchMulticastController mcController = batchControl.getMulticastController();
+		if (mcController == null) {
+			return;
+		}
+		// response will be asynchronous, so don't wait for anything. 
+		mcController.sendCommand(BatchStatusCommand.commandId);
+//		mcController.sendCommand("status");
 	}
 
 	/**
@@ -87,7 +116,7 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 				BatchDataUnit nextJob = findNextNotStarted();
 				if (nextJob != null) {
 					JobController jobControl = JobController.getJobController(batchControl, nextJob, BatchProcess.this);
-					ArrayList<String> commands = batchControl.getBatchJobLaunchParams(nextJob.getBatchJobInfo());
+					ArrayList<String> commands = batchControl.getBatchJobLaunchParams(nextJob);
 					if (jobControl.launchJob(commands)) {
 						nextJob.getBatchJobInfo().jobStatus = BatchJobStatus.RUNNING;
 					}
@@ -122,6 +151,14 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 //				}
 //				break;
 //			}
+		}
+
+		@Override
+		protected void done() {
+			PamController.getInstance().pamEnded();
+			PamController.getInstance().pamStop();
+			String msg = "Batch processing is complete. Nothing more to do";
+			WarnOnce.showWarning("Batch Procesing", msg, WarnOnce.WARNING_MESSAGE);
 		}
 		
 	}

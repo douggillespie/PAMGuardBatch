@@ -54,6 +54,7 @@ public class BatchLogging extends SQLLogging {
 			sourceFolder.setValue(jobInfo.soundFileFolder);
 			binaryFolder.setValue(jobInfo.outputBinaryFolder);
 			databaseName.setValue(jobInfo.outputDatabaseName);
+			percent.setValue((float) jobInfo.percentDone);
 			if (jobInfo.jobStatus == null) {
 				status.setValue(null);
 			}
@@ -69,6 +70,8 @@ public class BatchLogging extends SQLLogging {
 		jobInfo.soundFileFolder = sourceFolder.getDeblankedStringValue();
 		jobInfo.outputBinaryFolder = binaryFolder.getDeblankedStringValue();
 		jobInfo.outputDatabaseName = databaseName.getDeblankedStringValue();
+		double percentDone = percent.getFloatValue();
+		jobInfo.percentDone = percentDone;
 		String statusStr = status.getDeblankedStringValue();
 		jobInfo.jobStatus = BatchJobStatus.getValue(statusStr);
 		BatchDataUnit dataUnit = new BatchDataUnit(timeMilliseconds, jobInfo);

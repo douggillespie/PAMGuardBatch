@@ -75,8 +75,12 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 			if (conflict != null) {
 				return "Conflict with job id " + conflict.getDatabaseIndex();
 			}
-			if (jobInfo != null && jobInfo.jobStatus != null) {
-				return jobInfo.jobStatus.toString();
+			if (jobInfo != null) {
+				if (jobInfo.jobStatus == null) {
+					return "Status unknown";
+				}
+				String str = String.format("%s: %3.1f%% done", jobInfo.jobStatus.toString(), jobInfo.percentDone);
+				return str;
 			}
 			break;
 		
