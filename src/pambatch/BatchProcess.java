@@ -17,6 +17,7 @@ import PamController.command.BatchStatusCommand;
 import PamView.dialog.warn.WarnOnce;
 import PamguardMVC.PamProcess;
 import pambatch.comms.BatchMulticastController;
+import pambatch.config.BatchJobInfo;
 import pambatch.ctrl.JobController;
 import pambatch.ctrl.JobMonitor;
 import pambatch.logging.BatchLogging;
@@ -35,6 +36,11 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 	
 	private Timer jobCheckTimer;
 
+	/**
+	 * Interval between checks.
+	 */
+	private int CHECKTIMEINTERVAL = 5000;
+	
 	public BatchProcess(BatchControl batchControl) {
 		super(batchControl, null);
 		this.batchControl = batchControl;
@@ -42,7 +48,7 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		batchLogging = new BatchLogging(batchControl, batchDataBlock);
 		batchDataBlock.SetLogging(batchLogging);
 		addOutputDataBlock(batchDataBlock);
-		jobCheckTimer = new Timer(5000, new ActionListener() {
+		jobCheckTimer = new Timer(CHECKTIMEINTERVAL, new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				checkAllJobStatus();
@@ -57,9 +63,30 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		if (mcController == null) {
 			return;
 		}
+		checkForCrashes();
 		// response will be asynchronous, so don't wait for anything. 
 //		System.out.println("Sending Batch job multicast command: " + BatchStatusCommand.commandId);
 		mcController.sendCommand(BatchStatusCommand.commandId);
+	}
+
+	/**
+	 * Check all running jobs for crashes. 
+	 * A job will be deemed to have crashed if it's not had an update
+	 * to it's data unit for 3x the check interval, i.e. it's failed to
+	 * respond to 2 or 3 consecutive multicast status requests  
+	 */
+	private void checkForCrashes() {
+		long now = System.currentTimeMillis();
+		ArrayList<BatchDataUnit> jobUnits = batchDataBlock.getDataCopy();
+		for (BatchDataUnit aJob : jobUnits) {
+			BatchJobInfo jobInfo = aJob.getBatchJobInfo();
+			long updateInterval = now - aJob.getLastChangeTime();
+			if (jobInfo.jobStatus == BatchJobStatus.RUNNING && updateInterval > 3*CHECKTIMEINTERVAL) {
+				// job has stopped responding, so set it's status as unknown. 
+				jobInfo.jobStatus = BatchJobStatus.UNKNOWN;
+				updateJobStatus(aJob);
+			}
+		}
 	}
 
 	/**
@@ -118,7 +145,8 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 					JobController jobControl = JobController.getJobController(batchControl, nextJob, BatchProcess.this);
 					ArrayList<String> commands = batchControl.getBatchJobLaunchParams(nextJob);
 					if (jobControl.launchJob(commands)) {
-						nextJob.getBatchJobInfo().jobStatus = BatchJobStatus.RUNNING;
+						nextJob.getBatchJobInfo().jobStatus = BatchJobStatus.STARTING;
+						updateJobStatus(nextJob);
 					}
 					try {
 						Thread.sleep(3000);
@@ -127,6 +155,7 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 						e.printStackTrace();
 					}
 				}
+				
 			}
 //			for (BatchDataUnit batchDataUnit : batchJobs) {
 //				ArrayList<String> commands = batchControl.getBatchJobLaunchCommand(batchDataUnit.getBatchJobInfo());

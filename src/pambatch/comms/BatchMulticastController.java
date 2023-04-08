@@ -90,7 +90,19 @@ public class BatchMulticastController {
 		launchReceiverThread();
 		return datagramSocket;
 	}
-	
+
+	private boolean needNewsocket() {
+		if (datagramSocket == null) {
+			return true;
+		}
+		if (datagramSocket.isClosed()) {
+			return true;
+		}
+		// maybe check ports here too ...
+		//		if (datagramSocket.)
+		return false;
+	}
+
 	/**
 	 * Launch a receiver thread using the same socket port so that 
 	 * we can get messages back asynchronously. 
@@ -134,18 +146,6 @@ public class BatchMulticastController {
 //		System.out.println("Multicast controller recieved " + str);
 		batchControl.newStatusPacket(packet);
 		
-	}
-
-	private boolean needNewsocket() {
-		if (datagramSocket == null) {
-			return true;
-		}
-		if (datagramSocket.isClosed()) {
-			return true;
-		}
-		// maybe check ports here too ...
-//		if (datagramSocket.)
-		return false;
 	}
 
 	/**

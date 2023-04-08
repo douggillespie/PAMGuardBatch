@@ -34,6 +34,9 @@ public class LocalJobController extends JobController {
 			e1.printStackTrace();
 			return false;
 		}
+		
+		
+//		jobProcess.
 
 //		final ProcessBuilder builder = new ProcessBuilder(totalCommand);
 //		try {
@@ -56,8 +59,14 @@ public class LocalJobController extends JobController {
 		t = new Thread(ipMon);
 		t.start();
 
-		getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.RUNNING;
-		updateJobStatus();
+		/*
+		 * Don't do this, because if PAMGuard takes a very long time to start, it may be blocking and
+		 * won't respond to status requests. The checks within the batch controller may therefore think
+		 * it's crashed and restart it, creating chaos. The status will be set to running when 
+		 * it responds to a status request.  
+		 */
+//		getBatchDataUnit().getBatchJobInfo().jobStatus = BatchJobStatus.RUNNING;
+//		updateJobStatus();
 
 		return true;
 	}

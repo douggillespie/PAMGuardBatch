@@ -8,6 +8,8 @@ import javax.swing.JPopupMenu;
 
 import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
+import pambatch.BatchJobStatus;
+import pambatch.config.BatchJobInfo;
 
 public class SwingMenus {
 	
@@ -36,6 +38,27 @@ public class SwingMenus {
 				batchControl.editJob(dataUnit);
 			}
 		});
+		BatchJobInfo jobInfo = dataUnit.getBatchJobInfo();
+		if (jobInfo.jobStatus == BatchJobStatus.RUNNING) {
+			menuItem = new JMenuItem("Stop and close ...");
+			popMenu.add(menuItem);
+			menuItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.cancelJob(dataUnit);
+				}
+			});
+		}
+		if (jobInfo.jobStatus == BatchJobStatus.COMPLETE || jobInfo.jobStatus == BatchJobStatus.CANCELLED || jobInfo.jobStatus == BatchJobStatus.STARTING) {
+			menuItem = new JMenuItem("Reprocess job");
+			popMenu.add(menuItem);
+			menuItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.reprocessJob(dataUnit);
+				}
+			});
+		}
 		
 		return popMenu;
 	};

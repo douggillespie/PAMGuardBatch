@@ -1,9 +1,13 @@
 package pambatch.swing;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 
 import javax.swing.JPopupMenu;
+import javax.swing.Timer;
 
+import PamUtils.PamCalendar;
 import PamView.component.DataBlockTableView;
 import PamguardMVC.PamDataBlock;
 import pambatch.BatchControl;
@@ -13,18 +17,29 @@ import pambatch.config.BatchJobInfo;
 public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 	
 
-	private String[]  colNames = {"Id", "Source", "Binary", "Database", "Status"};
+	private String[]  colNames = {"Id", "Source", "Binary", "Database", "Status", "Updated"};
 	
 	private String[] tips = {"Job Id: the same as the index in the jobs database table",
 			"Source of input recordings to process", "Output file destination for binary data",
-			"Output database", "Job Status"};
+			"Output database", "Job Status", "Last update time"};
 
 	private BatchControl batchControl;
 
 	public JobsTableView(BatchControl batchControl, PamDataBlock<BatchDataUnit> pamDataBlock, String displayName) {
 		super(pamDataBlock, displayName);
 		this.batchControl = batchControl;
-		
+		Timer updateTimer = new Timer(1000, new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				updateTable();
+			}
+		});
+		updateTimer.start();
+	}
+
+	protected void updateTable() {
+		this.fireTableDataChanged();
 	}
 
 	@Override
@@ -83,7 +98,14 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 				return str;
 			}
 			break;
-		
+		case 5: // last update time
+			long interval = System.currentTimeMillis()-dataUnit.getLastChangeTime();
+			if (interval < 60000) {
+				return String.format("%d seconds ago", interval / 1000);
+			}
+			else {
+				return PamCalendar.formatDateTime(dataUnit.getLastChangeTime(), true);
+			}
 		}
 		return null;
 	}

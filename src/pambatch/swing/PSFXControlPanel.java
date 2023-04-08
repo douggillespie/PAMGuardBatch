@@ -95,6 +95,8 @@ public class PSFXControlPanel extends BatchPanel {
 		psfxPanel.add(browseButton, c);
 		c.gridx++;
 		psfxPanel.add(openButton, c);
+		c.gridx++;
+		psfxPanel.add(new JLabel("Use the PAMGuard 'Start' button to start batch jobs"));
 		c.gridx = 0;
 		c.gridy++;
 		c.gridwidth = 4;

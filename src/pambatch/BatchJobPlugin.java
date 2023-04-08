@@ -30,37 +30,32 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public String getDeveloperName() {
-		return "2.9";
+		return "2.7";
 	}
 
 	@Override
 	public String getContactEmail() {
-		// TODO Auto-generated method stub
-		return null;
+		return "support@pamguard.org";
 	}
 
 	@Override
 	public String getVersion() {
-		// TODO Auto-generated method stub
 		return "1.0";
 	}
 
 	@Override
 	public String getPamVerDevelopedOn() {
-		// TODO Auto-generated method stub
-		return "2.9";
+		return "2.7";
 	}
 
 	@Override
 	public String getPamVerTestedOn() {
-		// TODO Auto-generated method stub
-		return "2.9";
+		return "2.7";
 	}
 
 	@Override
 	public String getAboutText() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Batch processing";
 	}
 
 	@Override
@@ -70,20 +65,17 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public String getDescription() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Batch processing description";
 	}
 
 	@Override
 	public String getMenuGroup() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Utilities";
 	}
 
 	@Override
 	public String getToolTip() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Control of multiple PAMGuard processes with a common configuration (batch prcessing)";
 	}
 
 	@Override
@@ -94,32 +86,27 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public int getMinNumber() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public int getMaxNumber() {
-		// TODO Auto-generated method stub
-		return 0;
+		return 1;
 	}
 
 	@Override
 	public int getNInstances() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public boolean isItHidden() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public int allowedModes() {
-		// TODO Auto-generated method stub
-		return 0;
+		return PamPluginInterface.ALLMODES;
 	}
 
 }
