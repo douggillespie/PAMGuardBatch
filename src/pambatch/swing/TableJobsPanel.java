@@ -35,11 +35,7 @@ public class TableJobsPanel implements BatchJobsPanel {
 		mainPanel.setBorder(new TitledBorder("Job detail table"));
 		
 		jobsTableView = new JobsTableView(batchControl, batchControl.getBatchProcess().getBatchDataBlock(), "Jobs");
-//		jobTableModel = new JobTableModel();
-//		jobsTable = new PamTable(jobTableModel);
-//		new SwingTableColumnWidths(batchControl.getUnitName() + "Jobs table", jobsTable);
-		
-//		JScrollPane scrollPane = new JScrollPane(jobsTableV, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
 		mainPanel.add(BorderLayout.CENTER, jobsTableView.getComponent());
 	}
 
@@ -55,32 +51,5 @@ public class TableJobsPanel implements BatchJobsPanel {
 
 	}
 	
-//	private class JobTableModel extends AbstractTableModel {
-//		
-//		private String[]  colNames = {"Job Id", "Source", "Status"};
-//
-//		@Override
-//		public int getRowCount() {
-//			// TODO Auto-generated method stub
-//			return 0;
-//		}
-//
-//		@Override
-//		public int getColumnCount() {
-//			return colNames.length;
-//		}
-//
-//		@Override
-//		public Object getValueAt(int rowIndex, int columnIndex) {
-//			// TODO Auto-generated method stub
-//			return null;
-//		}
-//
-//		@Override
-//		public String getColumnName(int column) {
-//			return colNames[column];
-//		}
-//		
-//	}
 
 }

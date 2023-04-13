@@ -12,16 +12,25 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
 
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import pambatch.BatchControl;
 import pambatch.config.BatchParameters;
+import pambatch.ctrl.BatchState;
+import pambatch.ctrl.BatchStateObserver;
 
 /**
  * functions for finding and handling interactions with remote agents
@@ -30,15 +39,17 @@ import pambatch.config.BatchParameters;
  * @author dg50
  *
  */
-public class RemoteAgentHandler {
+public class RemoteAgentHandler implements BatchStateObserver {
 
 	private BatchControl batchControl;
 	
 	private Timer agentPingTimer;
 
-	private DatagramSocket datagramSocket;
+	private MulticastSocket datagramSocket;
 
 	private InetAddress mcIPAddress;
+	
+//	InetAddress group;
 
 	private Thread rxThread;
 
@@ -52,7 +63,9 @@ public class RemoteAgentHandler {
 
 	private volatile boolean waitingReply;
 
-	private volatile DatagramPacket replyPacket;
+	private volatile String replyString;
+
+	private NetworkInterface currentNetInterface;
 		
 	public RemoteAgentHandler(BatchControl batchControl) {
 		super();
@@ -66,6 +79,7 @@ public class RemoteAgentHandler {
 		 */
 //		addLocalMachine();
 		
+		batchControl.addStateObserver(this);
 		startListener();
 				
 		agentPingTimer = new Timer(10000, new ActionListener() {
@@ -77,6 +91,15 @@ public class RemoteAgentHandler {
 		agentPingTimer.setInitialDelay(0);
 		agentPingTimer.start();
 		
+	}
+
+	@Override
+	public void update(BatchState batchState, Object data) {
+		switch (batchState) {
+		case INITIALISATIONCOMPLETE:
+		case NEWSETTING:
+			restartSocket();
+		}
 	}
 
 	/**
@@ -121,7 +144,7 @@ public class RemoteAgentHandler {
 	 * @param timeoutMillis
 	 * @return
 	 */
-	public synchronized DatagramPacket sendAndWait(byte[] data, long timeoutMillis) {
+	public synchronized String sendAndWait(byte[] data, long timeoutMillis) {
 		return sendAndWait(data, data.length, timeoutMillis);
 	}
 	
@@ -133,9 +156,9 @@ public class RemoteAgentHandler {
 	 * @param timeoutMillis
 	 * @return
 	 */
-	public synchronized DatagramPacket sendAndWait(byte[] data, int length, long timeoutMillis) {
+	public synchronized String sendAndWait(byte[] data, int length, long timeoutMillis) {
 		waitingReply = true;
-		replyPacket = null;
+		replyString = null;
 		boolean sent = sendData(data, length);
 		if (sent == false) {
 			waitingReply = false;
@@ -149,7 +172,7 @@ public class RemoteAgentHandler {
 				e.printStackTrace();
 			}
 		}
-		return replyPacket;		
+		return replyString;		
 	}
 
 	
@@ -171,9 +194,9 @@ public class RemoteAgentHandler {
 			return false;
 		}
 		
-		DatagramPacket packet = new DatagramPacket(data, length);;
-		packet.setAddress(mcIPAddress);
-		packet.setPort(defaultAgentPort);
+		DatagramPacket packet = new DatagramPacket(data, length, mcIPAddress, defaultAgentPort);;
+//		packet.setAddress(mcIPAddress);
+//		packet.setPort(defaultAgentPort);
 		try {
 			udpSocket.send(packet);
 		} catch (IOException e) {
@@ -188,14 +211,18 @@ public class RemoteAgentHandler {
 	 */
 	private void receiveReplies() {
 		continueRX = true;
-		DatagramSocket socket = getSocket();
-		if (socket == null) {
-			return;
-		}
 		int len = 1024;
 		DatagramPacket packet = new DatagramPacket(new byte[len], len);
 		while (continueRX) {
 			try {
+				DatagramSocket socket = getSocket();
+				if (socket == null) {
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
 				socket.receive(packet);
 				interpretPacket(packet);
 			} catch (IOException e) {
@@ -205,7 +232,9 @@ public class RemoteAgentHandler {
 
 	private void interpretPacket(DatagramPacket packet) {
 		if (waitingReply) {
-			replyPacket = packet;
+			String str = new String(packet.getData(), 0, packet.getLength());
+//			System.out.println(str);
+			replyString = new String(packet.getData(), 0, packet.getLength());
 			waitingReply = false;
 		}
 		else {
@@ -245,6 +274,24 @@ public class RemoteAgentHandler {
 		if (exDataUnit == null) {
 			exDataUnit = new RemoteAgentDataUnit(System.currentTimeMillis(), false, remoteIp, computerName, osName, osArch, nProc);
 			remoteAgentDataBlock.addPamData(exDataUnit);
+			// can't so this here or it blocks the receive thread so can't get the reply when it sends psfx data
+			SwingUtilities.invokeLater(new PSFXSendTest(exDataUnit));
+		}
+		else {
+			remoteAgentDataBlock.updatePamData(exDataUnit, System.currentTimeMillis());
+		}
+	}
+	
+	private class PSFXSendTest implements Runnable {
+
+		private RemoteAgentDataUnit exDataUnit;
+
+		public PSFXSendTest(RemoteAgentDataUnit exDataUnit) {
+			this.exDataUnit = exDataUnit;
+		}
+
+		@Override
+		public void run() {
 			sendPSFXFile(exDataUnit);
 		}
 		
@@ -295,6 +342,7 @@ public class RemoteAgentHandler {
 			e.printStackTrace();
 		}
 		// now make up data arrays and send them for each, waiting for an acknowlegement
+		String retMsg = null;
 		for (int i = 0; i < psfxBits.size(); i++) {
 			byte[] data = psfxBits.get(i);
 			byte chkSum = 0;
@@ -307,14 +355,39 @@ public class RemoteAgentHandler {
 			bos.writeBytes(head.getBytes());
 			bos.writeBytes(data);
 			byte[] dataOut = bos.toByteArray();
-			DatagramPacket response = sendAndWait(dataOut, 1000);
+			String response = sendAndWait(dataOut, 3000);
 			if (response == null) {
 				System.out.printf("Sending psfx data part %d of %d to remote PC %s failed\n", i+1, psfxBits.size(), remoteAgent.getComputerName());
 				return false;
 			}
+			else {
+				retMsg = response;//new String(response.getData(), 0, response.getLength());
+				if (retMsg.contains("Error")) {
+					System.out.printf("Error '%s' sending psfx part %d of %d to %s\n", retMsg, i+1, psfxBits.size(), remoteAgent.getComputerName());
+				}
+			}
+		}
+		if (retMsg == null) {
+			System.out.println("No psfx messages sent to host " + remoteAgent.getComputerName());
+			return false;
+		}
+		if (retMsg.equals("PSFXOK")) {
+			System.out.printf("psfx file sucessfully transferred to host %s in %d parts\n", remoteAgent.getComputerName(), psfxBits.size());
+			return true;
+		}
+		else {
+			System.out.printf("Unknown PSFX return code '%s' from host %s\n", retMsg, remoteAgent.getComputerName());
+			return false;
 		}
 		
-		return true;
+	}
+
+	private synchronized void restartSocket() {
+		if (datagramSocket == null) {
+			return;
+		}
+		datagramSocket.close();
+		datagramSocket = null;
 	}
 
 	/**
@@ -328,19 +401,43 @@ public class RemoteAgentHandler {
 //		BatchParameters params = batchControl.getBatchParameters();
 		// open a socket. 
 		try {
-			datagramSocket = new DatagramSocket();
-		} catch (SocketException e) {
+			datagramSocket = new MulticastSocket();
+		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
 		}
 		// interpret the address to save doing this multiple times. 
 		try {
 			mcIPAddress = InetAddress.getByName(defaultAgentAddr);
+//			group  = 
 		} catch (UnknownHostException e) {
 			System.err.println("Batch Multicast agent controller Error with address: " + e.getMessage());
 			e.printStackTrace();
 			return null;
 		}
+		
+		InetSocketAddress group = new InetSocketAddress(mcIPAddress, defaultAgentPort);
+		String netInfName = batchControl.getBatchParameters().getNetworkInterfaceName();
+		boolean available = NetInterfaceFinder.isAvailable(netInfName);
+		if (available == false) {
+			System.out.printf("Network interface %s is not currently available. Check your hardware\n", netInfName);
+		}
+		else {
+			try {
+				currentNetInterface = NetworkInterface.getByName(netInfName); // was eth8 on laptop in office using usbc adapter. 
+				System.out.println("Connecting multiport socket on " + currentNetInterface.getDisplayName()); 
+				//			datagramSocket.setBroadcast(true);
+				datagramSocket.joinGroup(group, currentNetInterface);
+				//			datagramSocket.b
+			} catch (SocketException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 		launchReceiverThread();
 		return datagramSocket;
 	}
@@ -349,6 +446,7 @@ public class RemoteAgentHandler {
 		// TODO Auto-generated method stub
 		
 	}
+
 
 	private boolean needNewsocket() {
 		if (datagramSocket == null) {
@@ -360,6 +458,13 @@ public class RemoteAgentHandler {
 		// maybe check ports here too ...
 		//		if (datagramSocket.)
 		return false;
+	}
+
+	/**
+	 * @return the remoteAgentDataBlock
+	 */
+	public RemoteAgentDataBlock getRemoteAgentDataBlock() {
+		return remoteAgentDataBlock;
 	}
 
 }

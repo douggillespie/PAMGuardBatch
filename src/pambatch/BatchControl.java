@@ -34,6 +34,8 @@ import pambatch.comms.BatchMulticastRX;
 import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
 import pambatch.config.BatchParameters;
+import pambatch.ctrl.BatchState;
+import pambatch.ctrl.BatchStateObserver;
 import pambatch.ctrl.JobController;
 import pambatch.remote.RemoteAgentHandler;
 import pambatch.swing.BatchSetDialog;
@@ -63,6 +65,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	private RemoteAgentHandler remoteAgentHandler;
 	
 	private Random randomJobId;
+	
+	private ArrayList<BatchStateObserver> batchStateObservers = new ArrayList();
 		
 	/**
 	 * @return the batchProcess
@@ -80,6 +84,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		swingMenus = new SwingMenus(this);
 		batchProcess = new BatchProcess(this);
 		addPamProcess(batchProcess);
+		remoteAgentHandler = new RemoteAgentHandler(this);
 		if (PamGUIManager.getGUIType() != PamGUIManager.NOGUI) {
 			batchTabPanel = new BatchTabPanel(this);
 		}
@@ -88,7 +93,6 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			batchTabPanel.setParams(batchParameters);
 		}
 		multicastController = new BatchMulticastController(this);
-		remoteAgentHandler = new RemoteAgentHandler(this);
 		
 		randomJobId = new Random(System.currentTimeMillis());
 //		batchMulticastRX = new BatchMulticastRX(this);
@@ -108,6 +112,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	public void notifyModelChanged(int changeType) {
 		super.notifyModelChanged(changeType);
 		if (changeType == PamController.INITIALIZATION_COMPLETE) {
+			updateObservers(BatchState.INITIALISATIONCOMPLETE);
 			loadExistingJobs(); // loads from database
 			checkRunningJobs();
 		}
@@ -691,6 +696,44 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		batchProcess.updateJobStatus(dataUnit);	
 	}
 
+	/**
+	 * @return the remoteAgentHandler
+	 */
+	public RemoteAgentHandler getRemoteAgentHandler() {
+		return remoteAgentHandler;
+	}
+
+	/**
+	 * Add an observer to get notifications whenever anything changes. 
+	 * @param stateObserver
+	 */
+	public void addStateObserver(BatchStateObserver stateObserver) {
+		batchStateObservers.add(stateObserver);
+	}
+
+	/**
+	 * Remove an observer that got notifications whenever anything changes. 
+	 * @param stateObserver
+	 */
+	public boolean removeStateObserver(BatchStateObserver stateObserver) {
+		return batchStateObservers.remove(stateObserver);
+	}
 	
+	/**
+	 * notify all state observers with null data. 
+	 * @param batchState new state
+	 */
+	public void updateObservers(BatchState batchState) {
+		updateObservers(batchState, null);
+	}
+	/**
+	 * notify all state observers. 
+	 * @param batchState new state
+	 * @param data state data (generally null)
+	 */
+	public void updateObservers(BatchState batchState, Object data) {
+		for (BatchStateObserver obs : batchStateObservers) {
+			obs.update(batchState, data);
+		}
+	}
 }
-;

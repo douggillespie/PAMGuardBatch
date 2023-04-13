@@ -5,7 +5,10 @@ import java.awt.Frame;
 
 import javax.swing.JComponent;
 import javax.swing.JMenu;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
 
 import PamView.PamTabPanel;
 import PamView.panel.PamPanel;
@@ -23,6 +26,10 @@ public class BatchTabPanel implements PamTabPanel {
 	private PSFXControlPanel psfxPanel;
 	
 	private JobControlPanel jobControlPanel;
+	
+	private JPanel splitNorth, splitSouth;
+
+	private AgentControlPanel agentControlPanel;
 
 	public BatchTabPanel(BatchControl batchControl) {
 		this.batchControl = batchControl;
@@ -34,7 +41,22 @@ public class BatchTabPanel implements PamTabPanel {
 		northPanel.add(BorderLayout.WEST, jobControlPanel);
 		northPanel.add(BorderLayout.CENTER, psfxPanel);
 		mainPanel.add(BorderLayout.NORTH, northPanel);
+		JPanel southPanel = new PamPanel(new BorderLayout());
+		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		splitPane.add(splitNorth= new PamPanel(new BorderLayout()));
+		splitPane.add(splitSouth= new PamPanel(new BorderLayout()));
 		setJobsPanel(new TableJobsPanel(batchControl, mainPanel));
+		mainPanel.add(BorderLayout.CENTER, splitPane);
+		
+		agentControlPanel = new AgentControlPanel(batchControl);
+		splitNorth.add(BorderLayout.CENTER, agentControlPanel.getPanel());
+
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				splitPane.setDividerLocation(0.3);
+			}
+		});
 	}
 
 	@Override
@@ -65,10 +87,10 @@ public class BatchTabPanel implements PamTabPanel {
 	 */
 	public void setJobsPanel(BatchJobsPanel jobsPanel) {
 		if (this.jobsPanel != null) {
-			mainPanel.remove(this.jobsPanel.getPanel());
+			splitSouth.remove(this.jobsPanel.getPanel());
 		}
 		this.jobsPanel = jobsPanel;
-		mainPanel.add(BorderLayout.CENTER, jobsPanel.getPanel());
+		splitSouth.add(BorderLayout.CENTER, jobsPanel.getPanel());
 	}
 
 	public void setParams(BatchParameters batchParameters) {

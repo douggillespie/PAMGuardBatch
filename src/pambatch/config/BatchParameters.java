@@ -1,10 +1,14 @@
 package pambatch.config;
 
 import java.io.Serializable;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import PamController.fileprocessing.ReprocessManager;
 import PamController.fileprocessing.ReprocessStoreChoice;
+import pambatch.remote.NetInterfaceFinder;
 
 public class BatchParameters  implements Serializable, Cloneable{
 
@@ -36,6 +40,10 @@ public class BatchParameters  implements Serializable, Cloneable{
 	private String multicastAddress = defaultMulticastAddr;
 	
 	private boolean noGUI;
+	
+	private HashMap<String, MachineParameters> machineParameters = new HashMap<>();
+	
+	private String networkInterfaceName;
 	
 //	/**
 //	 * List of datasets to hit with this process. 
@@ -158,6 +166,56 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 */
 	public void setNoGUI(boolean noGUI) {
 		this.noGUI = noGUI;
+	}
+	
+	/**
+	 * Set parameters for a specified machine. 
+	 * @param machineName
+	 * @param machineParameters
+	 */
+	public void setMachineParameters(String machineName, MachineParameters machineParameters) {
+		if (this.machineParameters == null) {
+			this.machineParameters = new HashMap<>();
+		}
+		this.machineParameters.put(machineName, machineParameters);
+	}
+	
+	/**
+	 * Get parameters for a specified machine. Create if needed. 
+	 * @param machineName
+	 * @return
+	 */
+	public MachineParameters getMachineParameters(String machineName) {
+		if (this.machineParameters == null) {
+			this.machineParameters = new HashMap<>();
+		}
+		MachineParameters params = this.machineParameters.get(machineName);
+		if (params == null) {
+			params = new MachineParameters(machineName);
+			setMachineParameters(machineName, params);
+		}
+		return params;
+	}
+
+	/**
+	 * @return the networkInterfaceName
+	 */
+	public String getNetworkInterfaceName() {
+		if (networkInterfaceName == null) {
+			// default to first in list which will probably be loopback. 
+			List<NetworkInterface> infNames = NetInterfaceFinder.getIPV4Interfaces();
+			if (infNames.size() > 0) {
+				networkInterfaceName = infNames.get(0).getName();
+			}
+		}
+		return networkInterfaceName;
+	}
+
+	/**
+	 * @param networkInterfaceName the networkInterfaceName to set
+	 */
+	public void setNetworkInterfaceName(String networkInterfaceName) {
+		this.networkInterfaceName = networkInterfaceName;
 	}
 
 }
