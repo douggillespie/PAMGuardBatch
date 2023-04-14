@@ -18,29 +18,31 @@ import PamView.dialog.warn.WarnOnce;
 import PamguardMVC.PamProcess;
 import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
+import pambatch.config.MachineParameters;
 import pambatch.ctrl.JobController;
 import pambatch.ctrl.JobMonitor;
 import pambatch.logging.BatchLogging;
+import pambatch.remote.RemoteAgentDataUnit;
 import warnings.PamWarning;
 import warnings.WarningSystem;
 
 public class BatchProcess extends PamProcess implements JobMonitor {
 
 	private BatchControl batchControl;
-	
+
 	private BatchDataBlock batchDataBlock;
-	
+
 	private BatchLogging batchLogging;
 
 	private volatile boolean keepProcessing;
-	
+
 	private Timer jobCheckTimer;
 
 	/**
 	 * Interval between checks.
 	 */
 	private int CHECKTIMEINTERVAL = 5000;
-	
+
 	public BatchProcess(BatchControl batchControl) {
 		super(batchControl, null);
 		this.batchControl = batchControl;
@@ -65,7 +67,7 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		}
 		checkForCrashes();
 		// response will be asynchronous, so don't wait for anything. 
-//		System.out.println("Sending Batch job multicast command: " + BatchStatusCommand.commandId);
+		//		System.out.println("Sending Batch job multicast command: " + BatchStatusCommand.commandId);
 		mcController.sendCommand(BatchStatusCommand.commandId);
 	}
 
@@ -113,7 +115,7 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		batchWorker.execute();
 		keepProcessing = true;
 	}
-	
+
 	private class BatchWorker extends SwingWorker<Integer, BatchDataUnit> {
 
 		@Override
@@ -130,56 +132,82 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		private void runBatchJobs() {
 			ArrayList<BatchDataUnit> batchJobs = batchDataBlock.getDataCopy();
 			int totalJobs = batchJobs.size();
-			while (countJobState(BatchJobStatus.COMPLETE) < totalJobs && keepProcessing) {
-				int nRunning = countRunningJobs();
-				if (nRunning >= batchControl.getBatchParameters().getMaxConcurrentJobs()) {
-					try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-//						e.printStackTrace();
-					}
-					continue;
+			ArrayList<RemoteAgentDataUnit> machines = batchControl.getRemoteAgentHandler().getRemoteAgentDataBlock().getDataCopy();
+			while (countJobState(BatchJobStatus.COMPLETE, null) < totalJobs && keepProcessing) {
+				for (RemoteAgentDataUnit aPC : machines) {
+					checkMachineJobs(aPC, batchJobs);
 				}
-				BatchDataUnit nextJob = findNextNotStarted();
-				if (nextJob != null) {
-					JobController jobControl = JobController.getJobController(batchControl, nextJob, BatchProcess.this);
-					ArrayList<String> commands = batchControl.getBatchJobLaunchParams(nextJob);
-					if (jobControl.launchJob(commands)) {
-						nextJob.getBatchJobInfo().jobStatus = BatchJobStatus.STARTING;
-						updateJobStatus(nextJob);
-					}
-					try {
-						Thread.sleep(3000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					//						e.printStackTrace();
+				}
+			}
+		}
+		
+		/**
+		 * Check jobs running on a machine and start another if it's not busy enough 
+		 * @param remoteAgent
+		 * @param batchJobs
+		 * @return true if a new job was started, false otherwise. 
+		 */
+		private boolean checkMachineJobs(RemoteAgentDataUnit remoteAgent, ArrayList<BatchDataUnit> batchJobs) {
+			MachineParameters machineParams = batchControl.getBatchParameters().getMachineParameters(remoteAgent.getComputerName());
+			int nRunning = countRunningJobs(remoteAgent);
+			remoteAgent.setRunningCount(nRunning);
+			if (machineParams.isEnabled() == false) {
+				return false;
+			}
+			if (nRunning >= machineParams.maxJobs) {////batchControl.getBatchParameters().getMaxConcurrentJobs()) {
+				return false;
+			}
+			BatchDataUnit nextJob = findNextNotStarted();
+			boolean newLaunch = false;
+			if (nextJob != null) {
+				JobController jobControl = JobController.getJobController(batchControl, remoteAgent, nextJob, BatchProcess.this);
+				if (jobControl == null) {
+					return false;
+				}
+				ArrayList<String> commands = batchControl.getBatchJobLaunchParams(nextJob);
+				if (jobControl.launchJob(commands)) {
+					nextJob.getBatchJobInfo().jobStatus = BatchJobStatus.STARTING;
+					updateJobStatus(nextJob);
+					newLaunch = true;
+					remoteAgent.setRunningCount(nRunning+1);
 				}
 				
-			}
-//			for (BatchDataUnit batchDataUnit : batchJobs) {
-//				ArrayList<String> commands = batchControl.getBatchJobLaunchCommand(batchDataUnit.getBatchJobInfo());
-//				
-//				if (commands != null) {
-//					String command = makeOneLinecommand(commands);
-//					System.out.println(command);
-////					final ProcessBuilder builder = new ProcessBuilder(commands);
-////					try {
-////						builder.start();
-////					} catch (IOException e) {
-////						// TODO Auto-generated catch block
-////						e.printStackTrace();
-////					}
-//					try {
-//						Process proc = Runtime.getRuntime().exec(makeCommandArray(commands));
-//						createProcessMonitor(batchDataUnit, proc);
-//					} catch (IOException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
+//				try {
+//					Thread.sleep(3000);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
 //				}
-//				break;
-//			}
+			}
+
+			//			for (BatchDataUnit batchDataUnit : batchJobs) {
+			//				ArrayList<String> commands = batchControl.getBatchJobLaunchCommand(batchDataUnit.getBatchJobInfo());
+			//				
+			//				if (commands != null) {
+			//					String command = makeOneLinecommand(commands);
+			//					System.out.println(command);
+			////					final ProcessBuilder builder = new ProcessBuilder(commands);
+			////					try {
+			////						builder.start();
+			////					} catch (IOException e) {
+			////						// TODO Auto-generated catch block
+			////						e.printStackTrace();
+			////					}
+			//					try {
+			//						Process proc = Runtime.getRuntime().exec(makeCommandArray(commands));
+			//						createProcessMonitor(batchDataUnit, proc);
+			//					} catch (IOException e) {
+			//						// TODO Auto-generated catch block
+			//						e.printStackTrace();
+			//					}
+			//				}
+			//				break;
+			//			}
+			return newLaunch;
 		}
 
 		@Override
@@ -189,32 +217,17 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 			String msg = "Batch processing is complete. Nothing more to do";
 			WarnOnce.showWarning("Batch Procesing", msg, WarnOnce.WARNING_MESSAGE);
 		}
-		
+
 	}
-	
+
 	/**
 	 * 
 	 * @return number of running jobs. 
 	 */
-	private int countRunningJobs() {
-		return countJobState(BatchJobStatus.RUNNING);
+	private int countRunningJobs(RemoteAgentDataUnit remoteAgent) {
+		return countJobState(BatchJobStatus.RUNNING, remoteAgent);
 	}
-	
-//	/**
-//	 * Find the next job that hasn't started yet.
-//	 * @return next job to run. 
-//	 */
-//	private BatchDataUnit findNextIncomplete() {
-//		List<BatchDataUnit> jobList = batchDataBlock.copyDataList();
-//		int n = 0;
-//		for (BatchDataUnit aJob : jobList) {
-//			if (aJob.getBatchJobInfo().jobStatus != BatchJobStatus.COMPLETE) {
-//				return aJob;
-//			}
-//		}
-//		return null;
-//	}
-	
+
 	/**
 	 * Find the next job that hasn't started yet.
 	 * @return next job to run. 
@@ -230,23 +243,27 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Count the number of jobs in a given state.
-	 * @param jobState
+	 * @param jobState job state to count
+	 * @param remoteAgent  specific PC for job count. Null will return a count of all jobw. 
 	 * @return
 	 */
-	private int countJobState(BatchJobStatus jobState) {
+	private int countJobState(BatchJobStatus jobState, RemoteAgentDataUnit remoteAgent) {
 		List<BatchDataUnit> jobList = batchDataBlock.copyDataList();
 		int n = 0;
 		for (BatchDataUnit aJob : jobList) {
+			if (remoteAgent != null && aJob.getJobController() != null && aJob.getJobController().getRemoteAgent() != remoteAgent) {
+				continue;
+			}
 			if (aJob.getBatchJobInfo().jobStatus == jobState) {
 				n++;
 			}
 		}
 		return n;
 	}
-	
+
 	private String[] makeCommandArray(ArrayList<String> commands) {
 		String[] command = new String[commands.size()];
 		for (int i = 0; i < commands.size(); i++) {
@@ -254,58 +271,58 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		}
 		return command;
 	}
-	
-//	public void createProcessMonitor(BatchDataUnit batchDataUnit, Process proc) {
-//		ProcessMonitor pm = new ProcessMonitor(batchDataUnit, proc, proc.getInputStream());
-//		pm.execute();
-//		ProcessMonitor pme = new ProcessMonitor(batchDataUnit, proc, proc.getErrorStream());
-//		pme.execute();
-//	}
-//	
-//	private class ProcessMonitor extends SwingWorker<Integer, ProcessProgress> {
-//
-//		private BatchDataUnit batchDataUnit;
-//		
-//		private Process batchProcess;
-//
-//		private InputStream inputStream;
-//
-//		private BufferedReader bufferedReader;
-//		
-//		public ProcessMonitor(BatchDataUnit batchDataUnit, Process batchProcess, InputStream inputStream) {
-//			super();
-//			this.batchDataUnit = batchDataUnit;
-//			this.batchProcess = batchProcess;
-//			this.inputStream = inputStream;
-//			InputStreamReader isr = new InputStreamReader(inputStream);
-//			bufferedReader = new BufferedReader(isr);
-//		}
-//
-//		@Override
-//		protected Integer doInBackground() throws Exception {
-//			String line;
-////			publish(new LogCaptureMessage("Enter log capture thread"));
-//			try {
-//				while ((line = bufferedReader.readLine()) != null) {
-//					publish(new ProcessProgress(batchDataUnit, line));
-//				}
-//			}
-//			catch (IOException e) {
-//				publish(new ProcessProgress(batchDataUnit, e.getMessage()));
-//			}
-//			return null;
-//		}
-//
-//		@Override
-//		protected void process(List<ProcessProgress> chunks) {
-//			for (ProcessProgress pp : chunks) {
-//				System.out.println(pp.getString());
-//			}
-//		}
-//		
-//	}
-//	
-	
+
+	//	public void createProcessMonitor(BatchDataUnit batchDataUnit, Process proc) {
+	//		ProcessMonitor pm = new ProcessMonitor(batchDataUnit, proc, proc.getInputStream());
+	//		pm.execute();
+	//		ProcessMonitor pme = new ProcessMonitor(batchDataUnit, proc, proc.getErrorStream());
+	//		pme.execute();
+	//	}
+	//	
+	//	private class ProcessMonitor extends SwingWorker<Integer, ProcessProgress> {
+	//
+	//		private BatchDataUnit batchDataUnit;
+	//		
+	//		private Process batchProcess;
+	//
+	//		private InputStream inputStream;
+	//
+	//		private BufferedReader bufferedReader;
+	//		
+	//		public ProcessMonitor(BatchDataUnit batchDataUnit, Process batchProcess, InputStream inputStream) {
+	//			super();
+	//			this.batchDataUnit = batchDataUnit;
+	//			this.batchProcess = batchProcess;
+	//			this.inputStream = inputStream;
+	//			InputStreamReader isr = new InputStreamReader(inputStream);
+	//			bufferedReader = new BufferedReader(isr);
+	//		}
+	//
+	//		@Override
+	//		protected Integer doInBackground() throws Exception {
+	//			String line;
+	////			publish(new LogCaptureMessage("Enter log capture thread"));
+	//			try {
+	//				while ((line = bufferedReader.readLine()) != null) {
+	//					publish(new ProcessProgress(batchDataUnit, line));
+	//				}
+	//			}
+	//			catch (IOException e) {
+	//				publish(new ProcessProgress(batchDataUnit, e.getMessage()));
+	//			}
+	//			return null;
+	//		}
+	//
+	//		@Override
+	//		protected void process(List<ProcessProgress> chunks) {
+	//			for (ProcessProgress pp : chunks) {
+	//				System.out.println(pp.getString());
+	//			}
+	//		}
+	//		
+	//	}
+	//	
+
 
 	@Override
 	public void pamStop() {
@@ -314,8 +331,23 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 
 	@Override
 	public void updateJobStatus(BatchDataUnit batchDataUnit) {
+		// check the agent too. 
+		checkAgentStatus(batchDataUnit.getJobController().getRemoteAgent());
+		
 		batchDataBlock.updatePamData(batchDataUnit, System.currentTimeMillis());
-//		batchDataBlock.notifyObservers();
+	}
+
+	private void checkAgentStatus(RemoteAgentDataUnit remoteAgent) {
+		if (remoteAgent == null) {
+			return;
+		}
+		int nOld = remoteAgent.getRunningCount();
+		int nNew = countRunningJobs(remoteAgent);
+		if (nOld != nNew) {
+			remoteAgent.setRunningCount(nNew);
+			// fires table update in GUI
+			batchControl.getRemoteAgentHandler().getRemoteAgentDataBlock().updatePamData(remoteAgent, System.currentTimeMillis());
+		}
 	}
 
 }

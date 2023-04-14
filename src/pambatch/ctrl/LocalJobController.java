@@ -10,11 +10,12 @@ import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.BatchJobStatus;
 import pambatch.ProcessProgress;
+import pambatch.remote.RemoteAgentDataUnit;
 
 public class LocalJobController extends JobController {
 
-	public LocalJobController(BatchControl batchControl, BatchDataUnit batchDataUnit, JobMonitor jobMonitor) {
-		super(batchControl, batchDataUnit, jobMonitor);
+	public LocalJobController(BatchControl batchControl, RemoteAgentDataUnit remoteAgent, BatchDataUnit batchDataUnit, JobMonitor jobMonitor) {
+		super(batchControl, remoteAgent, batchDataUnit, jobMonitor);
 		// TODO Auto-generated constructor stub
 	}
 

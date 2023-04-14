@@ -6,7 +6,9 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -79,8 +81,9 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	
 	public BatchControl(String unitName) {
 		super(unitType, unitName);
-		System.out.println("Exe command is " + findStartExecutable());
-		System.out.println("Java command is " + findJavaCommand());
+//		System.out.println("Exe command is " + findStartExecutable());
+//		System.out.println("Java command is " + findJavaCommand());
+		PamSettingManager.getInstance().registerSettings(this);
 		swingMenus = new SwingMenus(this);
 		batchProcess = new BatchProcess(this);
 		addPamProcess(batchProcess);
@@ -88,7 +91,6 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		if (PamGUIManager.getGUIType() != PamGUIManager.NOGUI) {
 			batchTabPanel = new BatchTabPanel(this);
 		}
-		PamSettingManager.getInstance().registerSettings(this);
 		if (batchTabPanel != null) {
 			batchTabPanel.setParams(batchParameters);
 		}
@@ -148,6 +150,21 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	public boolean restoreSettings(PamControlledUnitSettings pamControlledUnitSettings) {
 		this.batchParameters = (BatchParameters) pamControlledUnitSettings.getSettings();
 		return true;
+	}
+	
+	/**
+	 * Get the name of the local machine this is running one. 
+	 * @return name of machine we're running on. 
+	 */
+	public static String getLocalMachineName() {
+		String computerName = "This PC";
+		try {
+			// this gets the name of the computer, not an ip address, something like PC22586 for my laptop. 
+			computerName = InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e) {
+			
+		}
+		return computerName;
 	}
 
 	@Override

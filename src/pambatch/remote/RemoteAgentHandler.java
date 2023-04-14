@@ -77,7 +77,7 @@ public class RemoteAgentHandler implements BatchStateObserver {
 		 *  comment this for debugging so that local machine behaves the same as remotes (may want to do
 		 *  that anyway ? to keep things consistent?).  
 		 */
-//		addLocalMachine();
+		addLocalMachine();
 		
 		batchControl.addStateObserver(this);
 		startListener();
@@ -109,12 +109,7 @@ public class RemoteAgentHandler implements BatchStateObserver {
 	private void addLocalMachine() {
 
 		// get the basic data about the computer. This only needs to be done once. 
-		String computerName = "This PC";
-		try {
-			// this gets the name of the computer, not an ip address, something like PC22586 for my laptop. 
-			computerName = InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException e) {
-		}
+		String computerName = BatchControl.getLocalMachineName();
 		String osName = System.getProperty("os.name");
 		String osArch = System.getProperty("os.arch");
 		int nProcessors = Runtime.getRuntime().availableProcessors();

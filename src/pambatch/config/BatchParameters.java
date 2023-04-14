@@ -8,6 +8,7 @@ import java.util.List;
 
 import PamController.fileprocessing.ReprocessManager;
 import PamController.fileprocessing.ReprocessStoreChoice;
+import pambatch.BatchControl;
 import pambatch.remote.NetInterfaceFinder;
 
 public class BatchParameters  implements Serializable, Cloneable{
@@ -24,10 +25,10 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 */
 	private String masterPSFX;
 	
-	/**
-	 * Max number of concurrent jobs that can run (per machine)
-	 */
-	private int maxConcurrentJobs = 3;
+//	/**
+//	 * Max number of concurrent jobs that can run (per machine)
+//	 */
+//	private int maxConcurrentJobs = 3;
 	
 	/**
 	 * Port ID for multicast comms with many jobs
@@ -89,19 +90,19 @@ public class BatchParameters  implements Serializable, Cloneable{
 		this.masterPSFX = masterPSFX;
 	}
 
-	/**
-	 * @return the maxConcurrentJobs
-	 */
-	public int getMaxConcurrentJobs() {
-		return maxConcurrentJobs;
-	}
-
-	/**
-	 * @param maxConcurrentJobs the maxConcurrentJobs to set
-	 */
-	public void setMaxConcurrentJobs(int maxConcurrentJobs) {
-		this.maxConcurrentJobs = maxConcurrentJobs;
-	}
+//	/**
+//	 * @return the maxConcurrentJobs
+//	 */
+//	public int getMaxConcurrentJobs() {
+//		return maxConcurrentJobs;
+//	}
+//
+//	/**
+//	 * @param maxConcurrentJobs the maxConcurrentJobs to set
+//	 */
+//	public void setMaxConcurrentJobs(int maxConcurrentJobs) {
+//		this.maxConcurrentJobs = maxConcurrentJobs;
+//	}
 
 	/**
 	 * @return the multicastPort
@@ -186,12 +187,18 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 * @return
 	 */
 	public MachineParameters getMachineParameters(String machineName) {
+		if (machineName == null) {
+			return null;
+		}
 		if (this.machineParameters == null) {
 			this.machineParameters = new HashMap<>();
 		}
 		MachineParameters params = this.machineParameters.get(machineName);
 		if (params == null) {
 			params = new MachineParameters(machineName);
+			if (machineName.equals(BatchControl.getLocalMachineName())) {
+				params.setEnabled(true);
+			}
 			setMachineParameters(machineName, params);
 		}
 		return params;

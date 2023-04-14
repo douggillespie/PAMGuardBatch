@@ -100,6 +100,9 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 			break;
 		case 5: // last update time
 			long interval = System.currentTimeMillis()-dataUnit.getLastChangeTime();
+			if (interval < 10000) {
+				return "Just now";
+			}
 			if (interval < 60000) {
 				return String.format("%d seconds ago", interval / 1000);
 			}

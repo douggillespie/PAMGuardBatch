@@ -13,6 +13,7 @@ public class RemoteAgentDataUnit extends PamDataUnit {
 	private int nProcessors;
 	private String remoteIP;
 	private boolean localMachine;
+	private int runningCount;
 
 	public RemoteAgentDataUnit(long timeMilliseconds, boolean localMachine, String remoteIP, String computerName, String osName, String osArch, int nProcessors) {
 		super(timeMilliseconds);
@@ -73,6 +74,21 @@ public class RemoteAgentDataUnit extends PamDataUnit {
 	public boolean isLocalMachine() {
 		return localMachine;
 	}
+
+	/**
+	 * @return the runningCount
+	 */
+	public int getRunningCount() {
+		return runningCount;
+	}
+
+	/**
+	 * @param runningCount the runningCount to set
+	 */
+	public void setRunningCount(int runningCount) {
+		this.runningCount = runningCount;
+	}
+
 
 
 }

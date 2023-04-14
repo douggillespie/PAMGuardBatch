@@ -64,6 +64,9 @@ public class AgentMulticastPanel extends BatchControlPanel implements BatchState
 			setParams();
 		}
 		batchControl.addStateObserver(this);
+		String tip = "This is the network device that is on the same subnet as the PAMGuard instance controlling batch processes";
+		interfaceList.setToolTipText(tip);
+		ipAddress.setToolTipText("IP address of selected adapter");
 	}
 	
 	protected void selectInterface() {
