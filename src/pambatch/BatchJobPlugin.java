@@ -30,7 +30,7 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public String getDeveloperName() {
-		return "2.7";
+		return "Doug Gillespie";
 	}
 
 	@Override
@@ -40,12 +40,12 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public String getVersion() {
-		return "1.0";
+		return "1.3";
 	}
 
 	@Override
 	public String getPamVerDevelopedOn() {
-		return "2.7";
+		return "2.8";
 	}
 
 	@Override

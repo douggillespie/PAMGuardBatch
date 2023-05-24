@@ -27,4 +27,10 @@ public class RemoteJobController extends JobController {
 		return false;
 	}
 
+//	@Override
+//	public void killJob() {
+//		// TODO Auto-generated method stub
+//		
+//	}
+
 }

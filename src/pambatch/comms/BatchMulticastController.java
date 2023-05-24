@@ -51,7 +51,7 @@ public class BatchMulticastController {
 	}
 	
 	/**
-	 * Send a batch command targetted at a specific PAMGuard. These are all sent
+	 * Send a batch command targeted at a specific PAMGuard. These are all sent
 	 * with a command "batchcommand" and will be recievied on multicast by all 
 	 * listeners, but only the listener with the matching id will pass the 
 	 * real command on to it's handler. 

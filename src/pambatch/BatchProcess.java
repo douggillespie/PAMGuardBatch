@@ -153,7 +153,8 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		 */
 		private boolean checkMachineJobs(RemoteAgentDataUnit remoteAgent, ArrayList<BatchDataUnit> batchJobs) {
 			MachineParameters machineParams = batchControl.getBatchParameters().getMachineParameters(remoteAgent.getComputerName());
-			int nRunning = countRunningJobs(remoteAgent);
+			// get number running AND starting, otherwise it starts the whole lot in one go.
+			int nRunning = countRunningJobs(remoteAgent) + countJobState(BatchJobStatus.STARTING, remoteAgent);
 			remoteAgent.setRunningCount(nRunning);
 			if (machineParams.isEnabled() == false) {
 				return false;
@@ -332,7 +333,11 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 	@Override
 	public void updateJobStatus(BatchDataUnit batchDataUnit) {
 		// check the agent too. 
-		checkAgentStatus(batchDataUnit.getJobController().getRemoteAgent());
+		JobController ctrler = batchDataUnit.getJobController();
+		if (ctrler == null) {
+			return;
+		}
+		checkAgentStatus(ctrler.getRemoteAgent());
 		
 		batchDataBlock.updatePamData(batchDataUnit, System.currentTimeMillis());
 	}

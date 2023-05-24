@@ -10,6 +10,7 @@ import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.BatchJobStatus;
 import pambatch.config.BatchJobInfo;
+import pambatch.ctrl.JobController;
 
 public class SwingMenus {
 	
@@ -49,6 +50,17 @@ public class SwingMenus {
 				}
 			});
 		}
+//		JobController jobController = dataUnit.getJobController();
+//		if (jobController != null) {
+//			menuItem = new JMenuItem("Stop / Kill job");
+//			popMenu.add(menuItem);
+//			menuItem.addActionListener(new ActionListener() {
+//				@Override
+//				public void actionPerformed(ActionEvent e) {
+//					jobController.killJob();
+//				}
+//			});
+//		}
 		if (jobInfo.jobStatus == BatchJobStatus.COMPLETE || jobInfo.jobStatus == BatchJobStatus.CANCELLED || jobInfo.jobStatus == BatchJobStatus.STARTING) {
 			menuItem = new JMenuItem("Reprocess job");
 			popMenu.add(menuItem);

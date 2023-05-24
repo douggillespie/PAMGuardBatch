@@ -92,4 +92,6 @@ public abstract class JobController {
 	public RemoteAgentDataUnit getRemoteAgent() {
 		return remoteAgent;
 	}
+
+//	public abstract void killJob();
 }

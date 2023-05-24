@@ -260,18 +260,18 @@ public class JobDialog extends PamDialog {
 		if (source.exists() == false || source.isDirectory() == false) {
 			return showWarning("you must select an existing folder of source audio files");
 		}
-		if (batchControl.findBinaryStore() != null) {
+//		if (batchControl.findBinaryStore() != null) {
 			jobInfo.outputBinaryFolder = jobSets[BINARY].getText();
 			if (jobInfo.outputBinaryFolder == null) {
 				return showWarning("you must select a folder for binary output");
 			}
-		}
-		if (batchControl.findDatabaseControl() != null) {
+//		}
+//		if (batchControl.findDatabaseControl() != null) {
 			jobInfo.outputDatabaseName = jobSets[DATABASE].getText();
 			if (jobInfo.outputDatabaseName == null) {
 				 showWarning("you must select an output database name");
 			}
-		}
+//		}
 		batchDataUnit.setBatchJobInfo(jobInfo);
 		isOk = true;
 		return true;

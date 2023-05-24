@@ -6,13 +6,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
+import PamController.command.StopCommand;
+import PamView.dialog.warn.WarnOnce;
 import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.BatchJobStatus;
 import pambatch.ProcessProgress;
+import pambatch.comms.BatchMulticastController;
+import pambatch.config.BatchJobInfo;
 import pambatch.remote.RemoteAgentDataUnit;
 
 public class LocalJobController extends JobController {
+
+	private Process jobProcess;
 
 	public LocalJobController(BatchControl batchControl, RemoteAgentDataUnit remoteAgent, BatchDataUnit batchDataUnit, JobMonitor jobMonitor) {
 		super(batchControl, remoteAgent, batchDataUnit, jobMonitor);
@@ -27,11 +33,10 @@ public class LocalJobController extends JobController {
 		
 		String singleLine = getOneLineCommand(totalCommand);
 
-		Process jobProcess = null;
+		jobProcess = null;
 		try {
 			jobProcess = Runtime.getRuntime().exec(singleLine);
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			return false;
 		}
@@ -128,5 +133,44 @@ public class LocalJobController extends JobController {
 		}
 		
 	}
+
+//	@Override
+//	public void killJob() {
+//		if (jobProcess == null) {
+//			return;
+//		}
+//		String msg = String.format("Are you sure you want to kill job id %d on %s?", getBatchDataUnit().getDatabaseIndex(),
+//				this.getRemoteAgent().getComputerName());
+//		int ans = WarnOnce.showWarning("Stop batch job", msg, WarnOnce.OK_CANCEL_OPTION);
+//		if (ans == WarnOnce.CANCEL_OPTION) {
+//			return;
+//		}
+//		// launch a separate thread to kill the job. It may not work, but 
+//		// worth a try.
+//		Thread t = new Thread(new Runnable() {
+//			
+//			@Override
+//			public void run() {
+//				killJobThread();
+//			}
+//		}, "Killing batch job");
+//	}
+//
+//	protected void killJobThread() {
+//		Process locProc = jobProcess;
+//		if (locProc == null) {
+//			return;
+//		}
+//		long t1 = System.currentTimeMillis();
+//		// ask nicely for it to stop, then if that doesn't work in a few
+//		// seconds, kill it. 
+//		BatchMulticastController mcController = getBatchControl().getMulticastController();
+//		BatchJobInfo jobInfo = getBatchDataUnit().getBatchJobInfo();
+//		int id1 = getBatchDataUnit().getDatabaseIndex();
+//		mcController.targetCommand(id1, jobInfo.getJobId2(), "stop");
+////		while (System.currentTimeMillis() - t1 < 4000) {
+////			mcController.targetCommand(id1, jobInfo.getJobId2(), "status");
+////		}
+//	}
 
 }
