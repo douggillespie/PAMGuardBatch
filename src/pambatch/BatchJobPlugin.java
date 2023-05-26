@@ -14,8 +14,7 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public String getHelpSetName() {
-		// TODO Auto-generated method stub
-		return null;
+		return "pambatch/help/BatchHelp.hs";
 	}
 
 	@Override
@@ -65,7 +64,7 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public String getDescription() {
-		return "Batch processing description";
+		return "Batch processing";
 	}
 
 	@Override
@@ -80,7 +79,6 @@ public class BatchJobPlugin implements PamPluginInterface {
 
 	@Override
 	public PamDependency getDependency() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

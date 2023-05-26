@@ -45,6 +45,7 @@ import fftManager.PamFFTControl;
 import group3dlocaliser.Group3DLocaliserControl;
 import meygenturbine.MeygenTurbine;
 import pambatch.BatchControl;
+import pambatch.BatchJobPlugin;
 import printscreen.PrintScreenControl;
 import rockBlock.RockBlockControl;
 import turbineops.TurbineOperationControl;
@@ -460,10 +461,10 @@ final public class PamModel implements PamModelInterface, PamSettings {
 //		mi.setModulesMenuGroup(utilitiesGroup);
 //		mi.setMaxNumber(1);
 
-		mi = PamModuleInfo.registerControlledUnit(BatchControl.class.getName(), BatchControl.unitType);
-		mi.setToolTipText("Batch processing control");
-		mi.setModulesMenuGroup(utilitiesGroup);
-		mi.setMaxNumber(1);
+//		mi = PamModuleInfo.registerControlledUnit(BatchControl.class.getName(), BatchControl.unitType);
+//		mi.setToolTipText("Batch processing control");
+//		mi.setModulesMenuGroup(utilitiesGroup);
+//		mi.setMaxNumber(1);
 		
 		
 
@@ -1073,6 +1074,8 @@ final public class PamModel implements PamModelInterface, PamSettings {
 		// clear the current list
 		pluginList.clear();
 		daqList.clear();
+		
+		pluginList.add(new BatchJobPlugin());
 
 		// Load up whatever default classloader was used to create this class.  Must use the same classloader
 		// for all plugins, or else we will not be able to create proper dependencies between them or be able
@@ -1140,30 +1143,11 @@ final public class PamModel implements PamModelInterface, PamSettings {
 					    // to add that URL to the default classloader path.
 					    URL newURL = jarList.get(i).toURI().toURL();
 					    
-					    // original method
-//					    Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-//					    method.setAccessible(true);
-//					    method.invoke(cl, newURL);
-					    
-					    // first fix attempt - create a brand new URLClassLoader. As expected, we get a ClassCastException when trying
-					    // to load the parameters so we can't save params using this method
-//					    URL[] newURLArray = new URL[1];
-//					    newURLArray[0] = newURL;
-//						cl = new URLClassLoader(newURLArray);
 						
 					    // second attempt - custom class loader with the system app loader specified as the parent.  Loads controlled unit, but
 					    // as before it doesn't load the parameters
 					    classLoader.addURL(newURL);
 
-					    // third attempt
-//					    Class<?> genericClass = cl.getClass();
-//					    Method method = genericClass.getSuperclass().getDeclaredMethod("addURL", new Class[] {URL.class});
-//					    method.setAccessible(true);
-//					    method.invoke(cl, new Object[] {newURL});
-
-					    
-					    
-					    
 					    // Save the name of the class to the global pluginBeingLoaded variable, and load the class.
 					    this.setPluginBeingLoaded(className);
 //						Class c = cl.loadClass(className);
@@ -1283,7 +1267,7 @@ final public class PamModel implements PamModelInterface, PamSettings {
 						
 						// instantiate the plugin control class using the custom class loader
 						try {
-							File classFile = new File(pf.getJarFile());		
+//							File classFile = new File(pf.getJarFile());		
 							//URLClassLoader cl = new URLClassLoader(new URL[]{classFile.toURI().toURL()});
 //							mi = PamModuleInfo.registerControlledUnit(pf.getClassName(), pf.getDescription(),cl);
 							mi = PamModuleInfo.registerControlledUnit(pf.getClassName(), pf.getDescription(),classLoader);
@@ -1369,6 +1353,7 @@ final public class PamModel implements PamModelInterface, PamSettings {
 		}
 		this.clearPluginBeingLoaded();
 	}
+
 
 	/**
 	 * Return a list of the plugins found in the plugin folder
