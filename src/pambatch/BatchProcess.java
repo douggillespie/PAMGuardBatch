@@ -177,37 +177,8 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 					remoteAgent.setRunningCount(nRunning+1);
 				}
 				
-//				try {
-//					Thread.sleep(3000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
 			}
 
-			//			for (BatchDataUnit batchDataUnit : batchJobs) {
-			//				ArrayList<String> commands = batchControl.getBatchJobLaunchCommand(batchDataUnit.getBatchJobInfo());
-			//				
-			//				if (commands != null) {
-			//					String command = makeOneLinecommand(commands);
-			//					System.out.println(command);
-			////					final ProcessBuilder builder = new ProcessBuilder(commands);
-			////					try {
-			////						builder.start();
-			////					} catch (IOException e) {
-			////						// TODO Auto-generated catch block
-			////						e.printStackTrace();
-			////					}
-			//					try {
-			//						Process proc = Runtime.getRuntime().exec(makeCommandArray(commands));
-			//						createProcessMonitor(batchDataUnit, proc);
-			//					} catch (IOException e) {
-			//						// TODO Auto-generated catch block
-			//						e.printStackTrace();
-			//					}
-			//				}
-			//				break;
-			//			}
 			return newLaunch;
 		}
 

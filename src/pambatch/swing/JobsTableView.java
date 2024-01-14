@@ -13,11 +13,18 @@ import PamguardMVC.PamDataBlock;
 import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.config.BatchJobInfo;
+import pambatch.config.BatchMode;
+import pambatch.config.SettingsObserver;
 
-public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
+public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements SettingsObserver {
 	
 
 	private String[]  colNames = {"Id", "Source", "Binary", "Database", "Status", "Updated"};
+	
+	// changed column order for viewer mode. 
+	private int[] viewerOrder = {0, 3, 2, 1, 4, 5};
+	
+	private String[] viewerColumns;
 	
 	private String[] tips = {"Job Id: the same as the index in the jobs database table",
 			"Source of input recordings to process", "Output file destination for binary data",
@@ -36,6 +43,14 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 			}
 		});
 		updateTimer.start();
+		batchControl.getSettingsObservers().addObserver(this);
+		showViewerScrollControls(false);
+	}
+
+	@Override
+	public void settingsUpdate(int changeType) {
+		updateTable();
+		fireTableStructureChanged();
 	}
 
 	protected void updateTable() {
@@ -43,12 +58,24 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 	}
 
 	@Override
-	public String[] getColumnNames() {
-		return colNames;
+	public String getColumnName(int columnIndex) {
+		columnIndex = modeColumn(columnIndex);
+		return colNames[columnIndex];
 	}
 
+	private int modeColumn(int column) {
+		BatchMode mode = batchControl.getBatchParameters().getBatchMode();
+		if (mode == BatchMode.VIEWER) {
+			if (column < viewerOrder.length) {
+				return viewerOrder[column];
+			}
+		}
+		return column;
+	}
+	
 	@Override
 	public String getToolTipText(BatchDataUnit dataUnit, int columnIndex) {
+		columnIndex = modeColumn(columnIndex);
 		return tips[columnIndex];
 	}
 
@@ -66,6 +93,7 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 		if (dataUnit == null) {
 			return null;
 		}
+		column = modeColumn(column);
 		BatchJobInfo jobInfo = dataUnit.getBatchJobInfo();
 		switch (column) {
 		case 0:
@@ -111,6 +139,11 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit>{
 			}
 		}
 		return null;
+	}
+
+	@Override
+	public String[] getColumnNames() {
+		return colNames;
 	}
 
 }

@@ -42,16 +42,6 @@ public class LocalJobController extends JobController {
 		}
 		
 		
-//		jobProcess.
-
-//		final ProcessBuilder builder = new ProcessBuilder(totalCommand);
-//		try {
-//			jobProcess = builder.start();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//			return false;
-//		}
 		/*
 		 *  seems to have launched, so set up monitor threads to read the 
 		 *  output and error streams of the process. 
@@ -77,24 +67,6 @@ public class LocalJobController extends JobController {
 		return true;
 	}
 	
-	private String getOneLineCommand(ArrayList<String> totalCommand) {
-		if (totalCommand == null || totalCommand.size() == 0) {
-			return null;
-		}
-		String oneLine = totalCommand.get(0);
-		for (int i = 1; i < totalCommand.size(); i++) {
-			if (oneLine.endsWith(" ") == false) {
-				oneLine += " ";
-			}
-			String bit = totalCommand.get(i);
-			bit = bit.trim();
-			if (bit.contains(" ")) {
-				bit = "\"" + bit + "\"";
-			}
-			oneLine += bit;
-		}
-		return oneLine;
-	}
 
 	private class InputStreamMonitor implements Runnable {
 

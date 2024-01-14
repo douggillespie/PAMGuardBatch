@@ -20,21 +20,17 @@ import javax.swing.event.ChangeListener;
 import PamController.fileprocessing.ReprocessStoreChoice;
 import PamView.dialog.PamGridBagContraints;
 import pambatch.BatchControl;
+import pambatch.config.BatchMode;
 import pambatch.config.BatchParameters;
+import pambatch.config.SettingsObservers;
 
 public class JobControlPanel extends BatchPanel {
 
 	private BatchControl batchControl;
 
-	//	private JTextField maxJobs;
-
-//	private JSpinner jobsSpinner;
-
 	private JButton addButton;
 
-//	private NumberEditor editor;
-
-//	private SpinnerNumberModel model;
+	private JComboBox<BatchMode> batchMode;
 
 	private JButton setButton;
 
@@ -43,9 +39,21 @@ public class JobControlPanel extends BatchPanel {
 	private JComboBox<ReprocessStoreChoice> reprocessChoices;
 
 	public JobControlPanel(BatchControl batchControl) {
-		super();
+		super(batchControl);
 		this.batchControl = batchControl;
 		setBorder(new TitledBorder("Job control"));
+		
+		batchMode = new JComboBox<BatchMode>();
+		BatchMode[] modes = BatchMode.values();
+		for (int i = 0; i < modes.length; i++) {
+			batchMode.addItem(modes[i]);
+		}
+		batchMode.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				batchModeChange();
+			}
+		});
 		
 		reprocessChoices = new JComboBox<>();
 		ReprocessStoreChoice[] choices = ReprocessStoreChoice.values();
@@ -59,45 +67,32 @@ public class JobControlPanel extends BatchPanel {
 			}
 		});
 		
-		//		maxJobs = new JTextField(3);
-//		jobsSpinner = new JSpinner();
-//		editor = new JSpinner.NumberEditor(jobsSpinner);
-//		jobsSpinner.setEditor(editor);
-//		//		jobsSpinner.setEditor(maxJobs);
-//		model = new SpinnerNumberModel(2, 1, 10, 1);
-//		jobsSpinner.setModel(model);
 		
 		this.setLayout(new GridBagLayout());
 		GridBagConstraints c = new PamGridBagContraints();
-//		c.gridwidth = 2;
-//		this.add(new JLabel("Max concurrent jobs ", JLabel.RIGHT), c);
-//		c.gridx+=c.gridwidth;
-//		c.gridwidth = 1;
-//		this.add(jobsSpinner, c);
-
-//		c.gridx ++;
-////		c.gridy++;
-//		c.gridwidth = 1;
+		
+		this.add(new JLabel("Mode: ", JLabel.RIGHT), c);
+		c.gridx++;
+		c.gridwidth = 3;
+		this.add(batchMode, c);
+		
+		c.gridx = 0;
+		c.gridy++;
+		c.gridwidth = 1;
+		this.add(new JLabel("Jobs: ", JLabel.RIGHT), c);
+		c.gridx++;
 		this.add(addButton = new JButton("Create job"), c);
-//		c.gridx+=c.gridwidth;
-//		c.gridwidth = 2;
 		c.gridx++;
 		this.add(setButton = new JButton("Create set"), c);
 		
 		c.gridx = 0;
 		c.gridy++;
-		c.gridwidth = 3;
+		c.gridwidth = 4;
 		this.add(new JLabel("Incomplete sets ..."), c);
 		c.gridy++;
-		c.gridwidth = 3;
+		c.gridwidth = 4;
 		this.add(reprocessChoices, c);
 
-//		jobsSpinner.addChangeListener(new ChangeListener() {
-//			@Override
-//			public void stateChanged(ChangeEvent e) {
-//				jobCountChange();
-//			}
-//		});
 		addButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -115,17 +110,8 @@ public class JobControlPanel extends BatchPanel {
 		addButton.setToolTipText("Create a single batch processing job");
 		setButton.setToolTipText("Create a set of batch jobs from within a common folder structure");
 		reprocessChoices.setToolTipText("Options of what to do if there are existing output data (e.g. after a crash or computer restart)");
-//		jobsSpinner.setToolTipText("Set the maximum number of jobs that can run concurrently on this computer");
 	}
 
-//	protected void jobCountChange() {
-//		Object jobValue = jobsSpinner.getValue();
-//		if (jobValue instanceof Integer) {
-//			if (batchParams != null) {
-//				batchParams.setMaxConcurrentJobs((Integer) jobValue);
-//			}
-//		}
-//	}
 
 	protected void createJob() {
 		batchControl.createJob();
@@ -134,6 +120,14 @@ public class JobControlPanel extends BatchPanel {
 	private void createSet() {
 		batchControl.createJobSet();
 	}
+
+	protected void batchModeChange() {
+		BatchMode mode = (BatchMode) batchMode.getSelectedItem();
+		batchParams = batchControl.getBatchParameters();
+		batchParams.setBatchMode(mode);
+		batchControl.settingsChange(SettingsObservers.CHANGE_RUNMODE);
+	}
+
 
 	protected void newReprocessChoice() {
 		ReprocessStoreChoice choice = (ReprocessStoreChoice) reprocessChoices.getSelectedItem();
@@ -144,10 +138,8 @@ public class JobControlPanel extends BatchPanel {
 
 	@Override
 	public void setParams(BatchParameters batchParams) {
-		//		maxJobs.setText(String.format("%d", batchParams.getMaxConcurrentJobs()));
 		this.batchParams = batchParams;
-		//		model.setValue(batchParams.getMaxConcurrentJobs());
-//		jobsSpinner.setValue(batchParams.getMaxConcurrentJobs());
 		reprocessChoices.setSelectedItem(batchParams.getReprocessChoice());
+		batchMode.setSelectedItem(batchParams.getBatchMode());
 	}
 }

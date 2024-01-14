@@ -1,6 +1,5 @@
 package pambatch;
 
-import java.awt.Desktop;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -13,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import javax.swing.JPopupMenu;
-import javax.swing.Timer;
 
 import Acquisition.FolderInputSystem;
 import Acquisition.pamAudio.PamAudioFileFilter;
@@ -32,13 +30,13 @@ import binaryFileStorage.BinaryStore;
 import generalDatabase.DBControl;
 import generalDatabase.DBControlUnit;
 import networkTransfer.send.NetworkSender;
-import pambatch.comms.BatchMulticastRX;
 import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
 import pambatch.config.BatchParameters;
+import pambatch.config.ExternalConfiguration;
+import pambatch.config.SettingsObservers;
 import pambatch.ctrl.BatchState;
 import pambatch.ctrl.BatchStateObserver;
-import pambatch.ctrl.JobController;
 import pambatch.remote.RemoteAgentHandler;
 import pambatch.swing.BatchSetDialog;
 import pambatch.swing.BatchTabPanel;
@@ -69,6 +67,10 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	private Random randomJobId;
 	
 	private ArrayList<BatchStateObserver> batchStateObservers = new ArrayList();
+	
+	private SettingsObservers settingsObservers = new SettingsObservers();
+	
+	private ExternalConfiguration externalConfiguration;
 		
 	/**
 	 * @return the batchProcess
@@ -83,6 +85,9 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		super(unitType, unitName);
 //		System.out.println("Exe command is " + findStartExecutable());
 //		System.out.println("Java command is " + findJavaCommand());
+		
+		externalConfiguration = new ExternalConfiguration(this);
+		
 		PamSettingManager.getInstance().registerSettings(this);
 		swingMenus = new SwingMenus(this);
 		batchProcess = new BatchProcess(this);
@@ -97,6 +102,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		multicastController = new BatchMulticastController(this);
 		
 		randomJobId = new Random(System.currentTimeMillis());
+		
 //		batchMulticastRX = new BatchMulticastRX(this);
 	}
 
@@ -117,6 +123,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			updateObservers(BatchState.INITIALISATIONCOMPLETE);
 			loadExistingJobs(); // loads from database
 			checkRunningJobs();
+			externalConfiguration.settingsUpdate(SettingsObservers.CHANGE_CONFIG);
 		}
 	}
 
@@ -312,6 +319,74 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 * @return
 	 */
 	public ArrayList<String> getBatchJobLaunchParams(BatchDataUnit nextJob) {
+		switch (batchParameters.getBatchMode()) {
+		case NORMAL:
+			return getNormalJobLaunchParams(nextJob);
+		case VIEWER:
+			return getViewerJobLaunchParams(nextJob);
+		default:
+			return null;		
+		}
+	}
+	
+	/**
+	 * Command line options for running offline tasks. These are quite different
+	 * to the command line options for running normal mode since we're passing 
+	 * a database and also an updated psfx so that the remote jobs can all get their
+	 * updated settings for the various tasks. 
+	 * @param nextJob
+	 * @return
+	 */
+	private ArrayList<String> getViewerJobLaunchParams(BatchDataUnit nextJob) {
+		// TODO Auto-generated method stub		
+		BatchJobInfo jobInfo = nextJob.getBatchJobInfo();
+		String pgExe = findStartExecutable();
+		if (pgExe == null) {
+			return null;
+		}
+		ArrayList<String> command = new ArrayList<>();
+		command.add("-v"); // viewer mode
+		command.add(DBControl.GlobalDatabaseNameArg); // viewer database. 
+		command.add(jobInfo.outputDatabaseName);
+		// and the psf since it will need to take the settings from it to override what's in the database. 
+		command.add("-psf");
+		String psf = batchParameters.getMasterPSFX();
+		command.add(psf);
+
+		if (jobInfo.soundFileFolder != null && jobInfo.soundFileFolder.length() > 0) {
+			command.add(psf);
+			command.add(FolderInputSystem.GlobalWavFolderArg);
+			command.add(jobInfo.soundFileFolder);
+		}
+		if (jobInfo.outputBinaryFolder != null && jobInfo.outputBinaryFolder.length() > 0) {
+			command.add(BinaryStore.GlobalFolderArg);
+			command.add(jobInfo.outputBinaryFolder);
+		}
+		
+		//the job id stuff
+		command.add("-multicast");
+		command.add(batchParameters.getMulticastAddress());
+		command.add(String.format("%d", batchParameters.getMulticastPort()));
+		command.add(NetworkSender.ID1);
+		command.add(String.format("%d", nextJob.getDatabaseIndex()));
+		int jobId2 = randomJobId.nextInt(10000); // generate a new random up to 4 digit integer
+		command.add(NetworkSender.ID2);
+		command.add(String.format("%d", jobId2));
+		jobInfo.setJobId2(jobId2);
+		
+		
+		
+		return command;
+	}
+
+	/**
+	 * Command line options for normal mode operations, i.e. processing a ton of 
+	 * sound files with a standard psfx file. 
+	 * @param nextJob
+	 * @return
+	 */
+	public ArrayList<String> getNormalJobLaunchParams(BatchDataUnit nextJob) {
+		
 		BatchJobInfo jobInfo = nextJob.getBatchJobInfo();
 		String pgExe = findStartExecutable();
 		if (pgExe == null) {
@@ -396,10 +471,13 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 */
 	public void createJob() {
 		BatchDataUnit newJobData = new BatchDataUnit(System.currentTimeMillis(), null);
-		batchProcess.getBatchLogging().logData(DBControlUnit.findConnection(), newJobData);
+//		batchProcess.getBatchLogging().logData(DBControlUnit.findConnection(), newJobData);
 		boolean ok = JobDialog.showDialog(getGuiFrame(), this, newJobData); 
 		if (ok) {
 			batchProcess.getBatchDataBlock().addPamData(newJobData);
+			batchProcess.getBatchDataBlock().updatePamData(newJobData, newJobData.getTimeMilliseconds());
+//			batchProcess.getBatchLogging().reLogData(DBControlUnit.findConnection(), newJobData);
+
 		}
 		else {
 			batchProcess.getBatchLogging().deleteData(newJobData);
@@ -488,6 +566,9 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 */
 	private boolean isSame(String path1, String path2) {
 		if (path1 == null || path2 == null) {
+			return false;
+		}
+		if (path1.length() == 0 && path2.length() == 0) {
 			return false;
 		}
 		return path1.equalsIgnoreCase(path2);
@@ -645,6 +726,23 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		updateJobStatus(jobData, commandBits);
 		
 	}
+	
+	/**
+	 * Called when there is a significant change type, e.g. mode change or 
+	 * new configuration, so that various bits of the batch processor can respond. 
+	 * @param changeType
+	 */
+	public void settingsChange(int changeType) {
+		settingsObservers.notifyObservers(changeType);
+	}
+	
+	/**
+	 * Get the list of settings observers and add yourself to it or remove yourself. 
+	 * @return
+	 */
+	public SettingsObservers getSettingsObservers() {
+		return settingsObservers;
+	}
 
 	/**
 	 * update job data and where necessary act on it. 
@@ -752,5 +850,12 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		for (BatchStateObserver obs : batchStateObservers) {
 			obs.update(batchState, data);
 		}
+	}
+
+	/**
+	 * @return the externalConfiguration
+	 */
+	public ExternalConfiguration getExternalConfiguration() {
+		return externalConfiguration;
 	}
 }

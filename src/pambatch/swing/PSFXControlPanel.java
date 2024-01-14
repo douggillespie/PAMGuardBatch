@@ -19,9 +19,11 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 
+import PamController.PamController;
 import PamUtils.PamFileChooser;
 import PamUtils.PamFileFilter;
 import PamView.PamColors.PamColor;
+import PamView.PamObjectViewer;
 import PamView.dialog.PamButton;
 import PamView.dialog.PamCheckBox;
 import PamView.dialog.PamDialog;
@@ -32,6 +34,8 @@ import PamView.panel.PamPanel;
 import nidaqdev.networkdaq.Shell;
 import pambatch.BatchControl;
 import pambatch.config.BatchParameters;
+import pambatch.config.SettingsObserver;
+import pambatch.config.SettingsObservers;
 import pamguard.Pamguard;
 
 public class PSFXControlPanel extends BatchPanel {
@@ -40,7 +44,7 @@ public class PSFXControlPanel extends BatchPanel {
 
 	private PamCheckBox useThisPSFX;
 
-	private JButton browseButton, openButton;
+	private JButton browseButton, openButton, viewModel;
 
 	private JTextField localExecutable; // going to launch from the installed exe, not from the jar file if possible. 
 
@@ -57,13 +61,14 @@ public class PSFXControlPanel extends BatchPanel {
 	//	private JTextField vmOptions;
 
 	public PSFXControlPanel(BatchControl batchControl) {
-		super(new BorderLayout());
+		super(batchControl, new BorderLayout());
 		this.batchControl = batchControl;
 		this.setBorder(new TitledBorder("Configuration"));
 		psfxName = new PamTextField(80);
 		psfxName.setEditable(false);
 		browseButton = new PamButton("Browse ...");
 		openButton = new PamButton("Launch configuration ...");
+		viewModel = new PamButton("View model");
 		useThisPSFX = new PamCheckBox("Use this configuration");
 		browseButton.addActionListener(new ActionListener() {
 			@Override
@@ -75,6 +80,13 @@ public class PSFXControlPanel extends BatchPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				launchPSFX();
+			}
+		});
+		viewModel.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				viewConfiguration();
 			}
 		});
 		useThisPSFX.addActionListener(new ActionListener() {
@@ -96,10 +108,12 @@ public class PSFXControlPanel extends BatchPanel {
 		c.gridx++;
 		psfxPanel.add(openButton, c);
 		c.gridx++;
+		psfxPanel.add(viewModel, c);
+		c.gridx++;
 		psfxPanel.add(new JLabel("Use the PAMGuard 'Start' button to start batch jobs"));
 		c.gridx = 0;
 		c.gridy++;
-		c.gridwidth = 4;
+		c.gridwidth = 5;
 		psfxPanel.add(psfxName, c);
 
 		c.gridx = 0;
@@ -165,6 +179,7 @@ public class PSFXControlPanel extends BatchPanel {
 				psfxName.setText(selFile.getAbsolutePath());
 				if (batchParams != null) {
 					batchParams.setMasterPSFX(selFile.getAbsolutePath());
+					getBatchControl().settingsChange(SettingsObservers.CHANGE_CONFIG);
 				}
 			}
 		}
@@ -255,6 +270,13 @@ public class PSFXControlPanel extends BatchPanel {
 //				// TODO Auto-generated catch block
 //				e.printStackTrace();
 //			}
+	}
+
+	/**
+	 * View the configuratoin in the model viewer. 
+	 */
+	protected void viewConfiguration() {
+		PamObjectViewer.Show(PamController.getMainFrame(), batchControl.getExternalConfiguration().getExtConfiguration());
 	}
 
 }

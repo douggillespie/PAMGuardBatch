@@ -19,6 +19,8 @@ public class BatchParameters  implements Serializable, Cloneable{
 	
 	public static final String defaultMulticastAddr = "230.1.1.1";
 	
+	private BatchMode batchMode = BatchMode.NORMAL;
+	
 	public boolean useThisPSFX = false;
 	/**
 	 * Master psfx file
@@ -223,6 +225,23 @@ public class BatchParameters  implements Serializable, Cloneable{
 	 */
 	public void setNetworkInterfaceName(String networkInterfaceName) {
 		this.networkInterfaceName = networkInterfaceName;
+	}
+
+	/**
+	 * @return the batchMode
+	 */
+	public BatchMode getBatchMode() {
+		if (batchMode == null) {
+			batchMode = BatchMode.NORMAL;
+		}
+		return batchMode;
+	}
+
+	/**
+	 * @param batchMode the batchMode to set
+	 */
+	public void setBatchMode(BatchMode batchMode) {
+		this.batchMode = batchMode;
 	}
 
 }

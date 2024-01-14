@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.BatchJobStatus;
+import pambatch.config.BatchMode;
 import pambatch.remote.RemoteAgentDataUnit;
 
 /**
@@ -45,8 +46,14 @@ public abstract class JobController {
 	 */
 	public static JobController getJobController(BatchControl batchControl, RemoteAgentDataUnit remoteAgent, BatchDataUnit batchDataUnit, JobMonitor jobMonitor) {
 		JobController jobController = null;
+		BatchMode mode = batchControl.getBatchParameters().getBatchMode();
 		if (remoteAgent.isLocalMachine()) {
+			if (mode == BatchMode.NORMAL) {
 			jobController = new LocalJobController(batchControl, remoteAgent, batchDataUnit, jobMonitor);
+			}
+			else {
+				jobController = new OfflineJobController(batchControl, remoteAgent, batchDataUnit, jobMonitor);
+			}
 			batchDataUnit.setJobController(jobController);
 		}
 		return jobController;
@@ -75,17 +82,31 @@ public abstract class JobController {
 		return batchDataUnit;
 	}
 
-	public String makeOneLinecommand(ArrayList<String> commands) {
-		if (commands.size() < 1) {
-			return "";
+	/**
+	 * Turn the array list of commands into a single string with each
+	 * parameter encapsulated in "" so that file paths with spaces don't break. 
+	 * @param totalCommand
+	 * @return
+	 */
+	public String getOneLineCommand(ArrayList<String> totalCommand) {
+		if (totalCommand == null || totalCommand.size() == 0) {
+			return null;
 		}
-		String command = commands.get(0);
-		for (int i = 1; i < commands.size(); i++) {
-			command += " \"" + commands.get(i) + "\"";
+		String oneLine = totalCommand.get(0);
+		for (int i = 1; i < totalCommand.size(); i++) {
+			if (oneLine.endsWith(" ") == false) {
+				oneLine += " ";
+			}
+			String bit = totalCommand.get(i);
+			bit = bit.trim();
+			if (bit.contains(" ")) {
+				bit = "\"" + bit + "\"";
+			}
+			oneLine += bit;
 		}
-		return command;
+		return oneLine;
 	}
-
+	
 	/**
 	 * @return the remoteAgent
 	 */

@@ -22,9 +22,11 @@ import PamUtils.PamFileChooser;
 import PamUtils.SelectFolder;
 import PamView.dialog.PamDialog;
 import PamView.dialog.PamGridBagContraints;
+import PamView.dialog.warn.WarnOnce;
 import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.config.BatchJobInfo;
+import pambatch.config.BatchMode;
 
 public class JobDialog extends PamDialog {
 
@@ -37,6 +39,8 @@ public class JobDialog extends PamDialog {
 	private JTextField databaseId;
 
 	private JTextField sourceFolder;
+	
+	private JButton similarButton;
 
 	//	private JTextField destBinary;
 	//	
@@ -145,11 +149,14 @@ public class JobDialog extends PamDialog {
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
 		File startLoc = null;
-		if (jobSets[BINARY].getText() != null) {
+		if (jobSets[BINARY].getText() != null && jobSets[BINARY].getText().length() != 0) {
 			startLoc = new File(jobSets[BINARY].getText());
 			startLoc = PamFolders.getFileChooserPath(startLoc);
-			fc.setCurrentDirectory(startLoc);
 		}
+		else {
+			startLoc = new File(PamFolders.getDefaultProjectFolder());
+		}
+		fc.setCurrentDirectory(startLoc);
 
 		int ans = fc.showDialog(this, "Storage folder for binary data");
 
@@ -171,12 +178,18 @@ public class JobDialog extends PamDialog {
 		FileFilter anyFilter = new FileFilter() {
 			@Override
 			public boolean accept(File pathname) {
-				return pathname.isDirectory() == false;
+				if (pathname.isDirectory()) {
+					return true;
+				}
+				String dbPath = pathname.getName();
+				if (dbPath.endsWith("sqlite3")) {
+					return true;
+				}
+				return true;
 			}
 
 			@Override
 			public String getDescription() {
-				// TODO Auto-generated method stub
 				return "Database Files";
 			}
 		};
@@ -188,6 +201,9 @@ public class JobDialog extends PamDialog {
 		if (current != null && current.length() > 0) {
 			File currFile = new File(current);
 			fileChooser.setSelectedFile(currFile);
+		}
+		else {
+			fileChooser.setCurrentDirectory(new File(PamFolders.getDefaultProjectFolder()));
 		}
 
 		int state = fileChooser.showOpenDialog(getOwner());
@@ -255,10 +271,20 @@ public class JobDialog extends PamDialog {
 			jobInfo = jobInfo.clone();
 		}
 		jobInfo.soundFileFolder = jobSets[SOURCES].getText();
+		BatchMode batchMode = batchControl.getBatchParameters().getBatchMode();
 		// could do a test to check it exists ? 
 		File source = new File(jobInfo.soundFileFolder);
 		if (source.exists() == false || source.isDirectory() == false) {
-			return showWarning("you must select an existing folder of source audio files");
+			if (batchMode == BatchMode.NORMAL) {
+				return showWarning("you must select an existing folder of source audio files");
+			}
+			else {
+				int ans = WarnOnce.showWarning("No source sound files", 
+						"Are you sure you want to proceed without any source sound files ?", WarnOnce.OK_CANCEL_OPTION);
+				if (ans == WarnOnce.CANCEL_OPTION) {
+					return false;
+				}
+			}
 		}
 //		if (batchControl.findBinaryStore() != null) {
 			jobInfo.outputBinaryFolder = jobSets[BINARY].getText();

@@ -24,6 +24,7 @@ public class AgentTableView extends DataBlockTableView<RemoteAgentDataUnit> {
 	public AgentTableView(BatchControl batchControl, PamDataBlock<RemoteAgentDataUnit> pamDataBlock) {
 		super(pamDataBlock, "Processing machines");
 		this.batchControl = batchControl;
+		showViewerScrollControls(false);
 	}
 
 	@Override
