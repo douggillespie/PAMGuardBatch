@@ -103,6 +103,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		
 		randomJobId = new Random(System.currentTimeMillis());
 		
+		audioFileFilter.addFileType(".glf");
+		
 //		batchMulticastRX = new BatchMulticastRX(this);
 	}
 
@@ -192,10 +194,11 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		// first look to see if we're running from the IDE and if so, also launch
 		// new configs from the ide
 		if (isBuildEnvironment()) {
-			String ideStr = eclipseLaunchLine();
-			if (ideStr != null) {
-				return ideStr;
-			}
+//			String ideStr = eclipseLaunchLine();
+//			if (ideStr != null) {
+//				return ideStr;
+//			}
+			return "C:\\Program Files\\Pamguard\\Pamguard.exe";
 		}
 		
 		// first look in the current directory and see if it's there. 
