@@ -6,10 +6,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import PamController.PamControlledUnit;
 import PamController.fileprocessing.ReprocessManager;
 import PamController.fileprocessing.ReprocessStoreChoice;
+import offlineProcessing.OfflineTask;
 import pambatch.BatchControl;
 import pambatch.remote.NetInterfaceFinder;
+import pambatch.tasks.TaskSelection;
 
 public class BatchParameters  implements Serializable, Cloneable{
 
@@ -47,6 +50,8 @@ public class BatchParameters  implements Serializable, Cloneable{
 	private HashMap<String, MachineParameters> machineParameters = new HashMap<>();
 	
 	private String networkInterfaceName;
+	
+	private HashMap<String, TaskSelection> offlineTasks = new HashMap<>();
 	
 //	/**
 //	 * List of datasets to hit with this process. 
@@ -243,5 +248,35 @@ public class BatchParameters  implements Serializable, Cloneable{
 	public void setBatchMode(BatchMode batchMode) {
 		this.batchMode = batchMode;
 	}
-
+	
+	/**
+	 * Set task selection parameters. 
+	 * @param offlineTask
+	 * @param taskSelection
+	 */
+	public void setTaskSelection(OfflineTask offlineTask, TaskSelection taskSelection) {
+		if (offlineTasks == null) {
+			offlineTasks = new HashMap<String, TaskSelection>();
+		}
+		offlineTasks.put(offlineTask.getLongName(), taskSelection);
+	}
+	
+	/**
+	 * Get offline task selection information. Will return a default empty 
+	 * class if one is not already stored in the hashmap
+	 * @param offlineTask 
+	 * @return task parameters
+	 */
+	public TaskSelection getTaskSelection(OfflineTask offlineTask) {
+		if (offlineTasks == null) {
+			offlineTasks = new HashMap<String, TaskSelection>();
+		}
+		TaskSelection sel = offlineTasks.get(offlineTask.getLongName());
+		if (sel == null) {
+			sel = new TaskSelection(false);
+			setTaskSelection(offlineTask, sel);
+		}
+		return sel;
+	}
+	
 }

@@ -11,14 +11,18 @@ import PamView.dialog.SettingsButton;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import offlineProcessing.OfflineTask;
+import pambatch.BatchControl;
 import pambatch.tasks.OfflineTaskDataUnit;
+import pambatch.tasks.TaskSelection;
 
 public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 
 	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select", "Configure"};
+	private BatchControl batchControl;
 
-	public TaskTableView(PamDataBlock<OfflineTaskDataUnit> pamDataBlock, String displayName) {
+	public TaskTableView(BatchControl batchControl, PamDataBlock<OfflineTaskDataUnit> pamDataBlock, String displayName) {
 		super(pamDataBlock, displayName);
+		this.batchControl = batchControl;
 		getTable().addMouseListener(new MouseAction());
 		showViewerScrollControls(false);
 	}
@@ -46,6 +50,7 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			return null;
 		}
 		PamControlledUnit pamModule = task.getTaskControlledUnit();
+		TaskSelection taskSelection = batchControl.getBatchParameters().getTaskSelection(task);
 		switch (column) {
 		case 0:
 			String type = pamModule.getUnitType();
@@ -69,7 +74,7 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		case 3:
 			return task.getAffectedBlocksList();
 		case 4:
-			return dataUnit.isSelected();
+			return taskSelection.selected;
 		case 5:
 			if (task.hasSettings()) {
 				return "Configure";
@@ -82,13 +87,15 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 	public void checkButtons(MouseEvent e) {
 		checkRowSelection(e);
 		OfflineTaskDataUnit dataUnit = getDataUnit(getTable().rowAtPoint(e.getPoint()));
+		OfflineTask task = dataUnit.getOfflineTask();
 		int selColumn = getTable().columnAtPoint(e.getPoint());
 		if (dataUnit == null || selColumn < 0) {
 			return;
 		}
 		switch (selColumn) {
 		case 4:
-			dataUnit.setSelected(!dataUnit.isSelected());
+			TaskSelection taskSelection = batchControl.getBatchParameters().getTaskSelection(task);
+			taskSelection.selected = !taskSelection.selected; // flip the value
 			fireTableDataChanged();
 			break;
 		case 5:

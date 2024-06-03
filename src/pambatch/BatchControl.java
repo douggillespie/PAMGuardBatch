@@ -30,6 +30,7 @@ import binaryFileStorage.BinaryStore;
 import generalDatabase.DBControl;
 import generalDatabase.DBControlUnit;
 import networkTransfer.send.NetworkSender;
+import offlineProcessing.OfflineTaskManager;
 import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
 import pambatch.config.BatchParameters;
@@ -43,6 +44,9 @@ import pambatch.swing.BatchTabPanel;
 import pambatch.swing.CheckExistingDialog;
 import pambatch.swing.JobDialog;
 import pambatch.swing.SwingMenus;
+import pambatch.tasks.OfflineTaskDataUnit;
+import pambatch.tasks.TaskSelection;
+import pamguard.GlobalArguments;
 import pamguard.Pamguard;
 
 public class BatchControl extends PamControlledUnit implements PamSettings {
@@ -349,6 +353,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		}
 		ArrayList<String> command = new ArrayList<>();
 		command.add("-v"); // viewer mode
+		command.add(GlobalArguments.BATCHFLAG);
 		command.add(DBControl.GlobalDatabaseNameArg); // viewer database. 
 		command.add(jobInfo.outputDatabaseName);
 		// and the psf since it will need to take the settings from it to override what's in the database. 
@@ -377,6 +382,19 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		command.add(String.format("%d", jobId2));
 		jobInfo.setJobId2(jobId2);
 		
+		/*
+		 * And add offline tasks to the list of commands. 
+		 */
+		ArrayList<OfflineTaskDataUnit> allTasks = externalConfiguration.getTaskDataBlock().getDataCopy();
+		for (OfflineTaskDataUnit aTaskUnit : allTasks) {
+			TaskSelection sel = batchParameters.getTaskSelection(aTaskUnit.getOfflineTask());
+			if (sel.selected == false) {
+				continue;
+			}
+			command.add(OfflineTaskManager.commandFlag);
+			command.add(aTaskUnit.getOfflineTask().getLongName());
+		}
+		
 		
 		
 		return command;
@@ -397,6 +415,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		}
 		ArrayList<String> command = new ArrayList<>();
 //		command.add(pgExe);
+		command.add(GlobalArguments.BATCHFLAG);
 		command.add("-psf");
 		String psf = batchParameters.getMasterPSFX();
 		if (psf == null) {
@@ -726,7 +745,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			return;
 		}
 //		System.out.printf("Update for job id %d: %s\n", id1, data);
-		updateJobStatus(jobData, commandBits);
+		updateJobStatus(jobData, data);
 		
 	}
 	
@@ -750,15 +769,17 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	/**
 	 * update job data and where necessary act on it. 
 	 * @param jobData
-	 * @param commandBits
+	 * @param data
 	 */
-	private void updateJobStatus(BatchDataUnit jobData, String[] commandBits) {
+	private void updateJobStatus(BatchDataUnit jobData, String data) {
+		System.out.println(data);
+		String[] commandBits = data.split(",");
 		if (commandBits[0].trim().equals(BatchStatusCommand.commandId)) {
 			int nFiles = -1;
 			int iFile = 0;
 			int status = -1;
 			if (commandBits.length < 5) {
-				System.out.println("Command is too short");
+				System.out.println("Command is too short: " + data);
 				return;
 			}
 			try {
@@ -773,7 +794,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			if (iFile == 0) {
 				jobStatus = BatchJobStatus.NOTSTARTED;
 			}
-			if (iFile >= nFiles) {
+			if (iFile >= nFiles && status == PamController.PAM_IDLE) {
 				jobStatus = BatchJobStatus.COMPLETE;
 				closeJob(jobData);
 			}

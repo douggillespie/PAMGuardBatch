@@ -32,7 +32,7 @@ public class TaskTablePanel  implements BatchJobsPanel, SettingsObserver {
 		
 		externalConfiguration = batchControl.getExternalConfiguration();
 		
-		taskTableView = new TaskTableView(externalConfiguration.getTaskDataBlock(), "Offline Tasks");
+		taskTableView = new TaskTableView(batchControl, externalConfiguration.getTaskDataBlock(), "Offline Tasks");
 		
 		mainPanel = new PamPanel(new BorderLayout());
 		mainPanel.setBorder(new TitledBorder("Offline tasks"));

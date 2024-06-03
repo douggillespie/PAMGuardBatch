@@ -12,7 +12,7 @@ import pambatch.remote.RemoteAgentDataUnit;
  * @author dg50
  *
  */
-public class OfflineJobController extends JobController {
+public class OfflineJobController extends LocalJobController {
 
 	public OfflineJobController(BatchControl batchControl, RemoteAgentDataUnit remoteAgent, BatchDataUnit batchDataUnit,
 			JobMonitor jobMonitor) {
@@ -21,15 +21,16 @@ public class OfflineJobController extends JobController {
 
 	@Override
 	public boolean launchJob(ArrayList<String> pamguardOptions) {
-
-		ArrayList<String> totalCommand = new ArrayList<>();
-		totalCommand.add(getBatchControl().findStartExecutable());
-		totalCommand.addAll(pamguardOptions);
-		
-		String singleLine = getOneLineCommand(totalCommand);
-		
-		String commandsOnly = getOneLineCommand(pamguardOptions);
-		return false;
+		return super.launchJob(pamguardOptions);
+//
+//		ArrayList<String> totalCommand = new ArrayList<>();
+//		totalCommand.add(getBatchControl().findStartExecutable());
+//		totalCommand.addAll(pamguardOptions);
+//		
+//		String singleLine = getOneLineCommand(totalCommand);
+//		
+//		String commandsOnly = getOneLineCommand(pamguardOptions);
+//		return false;
 	}
 
 }
