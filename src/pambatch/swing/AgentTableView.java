@@ -1,5 +1,7 @@
 package pambatch.swing;
 
+import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -8,6 +10,9 @@ import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.JTable;
+import javax.swing.border.Border;
+import javax.swing.table.JTableHeader;
 
 import PamUtils.PamCalendar;
 import PamView.component.DataBlockTableView;
@@ -16,6 +21,11 @@ import pambatch.BatchControl;
 import pambatch.config.MachineParameters;
 import pambatch.remote.RemoteAgentDataUnit;
 
+/**
+ * Tab panel to support multiple computers.
+ * @author dg50
+ *
+ */
 public class AgentTableView extends DataBlockTableView<RemoteAgentDataUnit> {
 	
 	String[] columnNames = {"Computer name", "Address", "Cores", "Enabled", "Max jobs", "Active jobs", "Last update"};
@@ -25,6 +35,40 @@ public class AgentTableView extends DataBlockTableView<RemoteAgentDataUnit> {
 		super(pamDataBlock, "Processing machines");
 		this.batchControl = batchControl;
 		showViewerScrollControls(false);
+		
+//		setPreferredHeight(1);
+	}
+
+	/**
+	 * Set the preferred height based on the number of rows to be displayed. 
+	 * @param nRows
+	 */
+	public int getPreferredHeight(int nRows) {
+		JTable table = getTable();
+		int rh = table.getRowHeight();
+//		tableHead.get
+		int hh = table.getTableHeader().getHeight();
+		JTableHeader tableHead = table.getTableHeader();
+		Dimension tbh = tableHead.getPreferredSize();
+		if (tbh != null) {
+			hh = tbh.height;
+		}
+		if (hh == 0) hh = rh+2;
+		int th = hh + rh*nRows;
+		Insets insets = getComponent().getInsets();
+		if (insets != null) {
+			th += insets.bottom+insets.top;
+		}
+		Border border = getComponent().getBorder();
+		if (border != null) {
+			Insets bi = border.getBorderInsets(getComponent());
+			if (bi != null) {
+				th += bi.top + bi.bottom;
+			}
+		}
+		return th;
+		
+//		getComponent().setPreferredSize(new Dimension(0, th));
 	}
 
 	@Override
@@ -36,15 +80,15 @@ public class AgentTableView extends DataBlockTableView<RemoteAgentDataUnit> {
 		boolean enabled = machineParams.isEnabled();
 		int maxJobs = machineParams.maxJobs;
 		JPopupMenu popMenu = new JPopupMenu();
-		JCheckBoxMenuItem enab = new JCheckBoxMenuItem("Enable " + dataUnit.getComputerName(), enabled);
-		enab.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				machineParams.setEnabled(enab.isSelected());
-				fireTableDataChanged();
-			}
-		});
-		popMenu.add(enab);
+//		JCheckBoxMenuItem enab = new JCheckBoxMenuItem("Enable " + dataUnit.getComputerName(), enabled);
+//		enab.addActionListener(new ActionListener() {
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+//				machineParams.setEnabled(enab.isSelected());
+//				fireTableDataChanged();
+//			}
+//		});
+//		popMenu.add(enab);
 		if (enabled) {
 			JMenuItem nJobs = new JMenuItem("Reduce max jobs to " + (maxJobs-1));
 			nJobs.addActionListener(new ActionListener() {
@@ -71,6 +115,8 @@ public class AgentTableView extends DataBlockTableView<RemoteAgentDataUnit> {
 		
 		popMenu.show(e.getComponent(), e.getX(), e.getY());
 	}
+	
+	
 	
 	@Override
 	public String[] getColumnNames() {

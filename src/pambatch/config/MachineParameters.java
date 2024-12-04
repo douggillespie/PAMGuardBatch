@@ -14,7 +14,7 @@ public class MachineParameters implements Serializable, Cloneable {
 	
 	private String machineName;
 	
-	public int maxJobs = 2;
+	public int maxJobs = 3;
 
 	private boolean enabled;
 
