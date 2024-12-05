@@ -1,0 +1,43 @@
+<html>
+
+<head>
+	<LINK href="../pamHelpStylesheet.css" type="text/css" rel="STYLESHEET">
+	<title>Batch Processing</title>
+</head>
+
+<body>
+
+	<h2>Creating Batch Jobs</h2>
+	<br>
+	<p>Before you start processing, you need to set up one or more "jobs". Each job requires the name
+	of a folder containing raw sound input data, the name of an output folder for binary data and
+	the name of a database. </p>
+	<p>The information about each job is stored in a table called Batch_processing.</p>
+	
+	
+	<h3>Setting up single jobs</h3>
+	<p>To set up a single batch job, click on "Create Job" and a dialog will appear where you can enter
+	the folder for source sound files, the name of the output binary folder and the name of the output
+	database. </p>
+		
+	<h3>Setting up multiple jobs</h3>
+	<p>If all of your raw data are in multiple folders on the same hard drive, then it's easy to set up multiple
+	jobs at once. Click the "Create Set" button and select the folder that contains sub folders for each set of
+	data. The files within the sub folders will be searched for sound files to see how many jobs to create. Then 
+	select a root folder for databases and a root folder for binary file output. The jobs will then be automatically
+	created with output binary folder names and database names based on the names of the sub folders containing 
+	the raw data. 
+	
+	<h3>Deleting Jobs</h3>
+	<p>Created jobs will all appear in the main table in the lower half of the display. You can delete
+	a job by right clicking on it and selecting "Delete Job" from the dropdown menu. </p>
+	<p>If you want to delete multiple jobs, it's sometimes easier to close PAMGuard and delete jobs from the 
+	BatchJobs table.</p>
+	
+	<h3>Editing jobs</h3>
+	<p>Individual jobs can be edited by right clicking on a line in the main jobs table.</p>
+	
+	<br><br>
+	<p>Previous: <a href="batchconfiguration.html">Configuring the batch processor.</a>
+	<p>Next: <a href="batchrun.html">Running batch jobs.</a>
+</body>
