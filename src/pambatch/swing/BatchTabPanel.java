@@ -42,6 +42,8 @@ public class BatchTabPanel implements PamTabPanel, SettingsObserver {
 
 	private PamPanel southPanel;
 
+	private SplitPanePositioner southPositioner;
+
 	public BatchTabPanel(BatchControl batchControl) {
 		this.batchControl = batchControl;
 		mainPanel = new PamPanel(new BorderLayout());
@@ -84,12 +86,13 @@ public class BatchTabPanel implements PamTabPanel, SettingsObserver {
 //			}
 //		});
 //		new SplitPanePositioner("Batch Split Pane 1", splitPane, 0.3);
-//		SwingUtilities.invokeLater(new Runnable() {
-//			@Override
-//			public void run() {
-//				new SplitPanePositioner("Batch Split Pane 2", southSplitPane, 0.5);
-//			}
-//		});
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				southPositioner = new SplitPanePositioner("Batch Split Pane 2", southSplitPane, 0.5);
+			}
+		});
 	}
 
 	/**
@@ -116,12 +119,15 @@ public class BatchTabPanel implements PamTabPanel, SettingsObserver {
 //			southSplitPane.add(splitSouthN);
 			//			southSplitPane.add(splitSouthS);//		
 			southPanel.invalidate();
-			SwingUtilities.invokeLater(new Runnable() {
-				@Override
-				public void run() {
-					southSplitPane.setDividerLocation(0.55);
-				}
-			});
+//			SwingUtilities.invokeLater(new Runnable() {
+			// not needed since all handled at construction time. 
+//				@Override
+//				public void run() {
+//					if (southPositioner != null) {
+////						southSplitPane.setDividerLocation(southPositioner.);
+//					}
+//				}
+//			});
 		}
 	}
 

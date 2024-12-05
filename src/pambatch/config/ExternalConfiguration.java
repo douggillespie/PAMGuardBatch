@@ -122,7 +122,12 @@ public class ExternalConfiguration implements SettingsObserver {
 			}
 			PamSettings pamSettings = (PamSettings) unit;
 			PamControlledUnitSettings settings = settingsGroup.findUnitSettings(pamSettings.getUnitType(), pamSettings.getUnitName());
-			pamSettings.restoreSettings(settings);
+			if (settings != null) {
+				pamSettings.restoreSettings(settings);
+			}
+			else {
+				System.out.println("No external settings for " + unit.getUnitName());
+			}
 		}
 		
 		extConfiguration.notifyModelChanged(PamController.INITIALIZATION_COMPLETE);

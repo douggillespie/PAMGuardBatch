@@ -10,6 +10,7 @@ import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.BatchJobStatus;
 import pambatch.config.BatchJobInfo;
+import pambatch.config.BatchMode;
 import pambatch.ctrl.JobController;
 
 public class SwingMenus {
@@ -22,6 +23,9 @@ public class SwingMenus {
 	}
 
 	public JPopupMenu getSwingPopupMenu(BatchDataUnit dataUnit) {
+		
+		BatchMode batchMode = batchControl.getBatchParameters().getBatchMode();
+		
 		JPopupMenu popMenu = new JPopupMenu();
 		JMenuItem menuItem = new JMenuItem("Delete Job");
 		popMenu.add(menuItem);
@@ -49,6 +53,17 @@ public class SwingMenus {
 					batchControl.cancelJob(dataUnit);
 				}
 			});
+		}
+		if (batchMode == BatchMode.VIEWER && jobInfo.outputDatabaseName != null) {
+			menuItem = new JMenuItem("Extract configuration from database ...");
+			popMenu.add(menuItem);
+			menuItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.extractDatabaseConfiguration(jobInfo.outputDatabaseName);
+				}
+			});
+			menuItem.setToolTipText("Extract configuration from database and use as master PSFX");
 		}
 //		JobController jobController = dataUnit.getJobController();
 //		if (jobController != null) {

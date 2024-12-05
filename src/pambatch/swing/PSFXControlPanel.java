@@ -33,6 +33,7 @@ import PamView.dialog.PamTextField;
 import PamView.panel.PamPanel;
 import nidaqdev.networkdaq.Shell;
 import pambatch.BatchControl;
+import pambatch.config.BatchMode;
 import pambatch.config.BatchParameters;
 import pambatch.config.SettingsObserver;
 import pambatch.config.SettingsObservers;
@@ -139,6 +140,7 @@ public class PSFXControlPanel extends BatchPanel {
 		//		c.gridx++;
 		//		trPanel.add(openButton, c);
 		//		this.add(BorderLayout.NORTH, topPanel);
+		setToolTips();
 	}
 	
 	@Override
@@ -148,12 +150,30 @@ public class PSFXControlPanel extends BatchPanel {
 		this.useThisPSFX.setSelected(batchParams.useThisPSFX);
 		
 		enableControls();
+		setToolTips();
 	}
 	
 	private void enableControls() {
-		boolean isUseThis = useThisPSFX.isSelected();
-		browseButton.setEnabled(!isUseThis);
-		psfxName.setEnabled(isUseThis);
+//		boolean isUseThis = useThisPSFX.isSelected();
+//		browseButton.setEnabled(!isUseThis);
+//		psfxName.setEnabled(isUseThis);
+		psfxName.setEditable(false);
+		browseButton.setEnabled(true);
+		openButton.setEnabled(hasPSFX());
+		viewModel.setEnabled(hasPSFX());
+	}
+
+	private void setToolTips() {
+	
+		BatchMode batchMode = batchControl.getBatchParameters().getBatchMode();
+		if (batchMode == BatchMode.NORMAL) {
+			browseButton.setToolTipText("Select PSFX file for data processing");
+		}
+		else {
+			browseButton.setToolTipText("Select extracted PSFX file, or extract settings from task database");
+		}
+		openButton.setToolTipText("Show and edit configuration in PAMGuard");
+		viewModel.setToolTipText("Show data model view");
 	}
 
 	private void setNoGUI() {
@@ -167,6 +187,16 @@ public class PSFXControlPanel extends BatchPanel {
 		if (batchParams != null) {
 			batchParams.useThisPSFX = useThisPSFX.isSelected();
 		}
+	}
+	
+	private boolean hasPSFX() {
+		if (batchParams == null) {
+			return false;
+		}
+		if (batchParams.getMasterPSFX() == null) {
+			return false;
+		}
+		return true;
 	}
 
 	protected void browsePSFX() {

@@ -28,11 +28,10 @@ import pambatch.BatchDataUnit;
 import pambatch.config.BatchJobInfo;
 import pambatch.config.BatchMode;
 
-public class JobDialog extends PamDialog {
+abstract public class JobDialog extends PamDialog {
 
-	private static JobDialog singleInstance;
 
-	private boolean isOk;
+	protected boolean isOk;
 
 	private BatchDataUnit batchDataUnit;
 
@@ -50,21 +49,20 @@ public class JobDialog extends PamDialog {
 	//	
 	private JobSet[] jobSets;
 
-	private static final int SOURCES = 0;
-	private static final int BINARY = 1;
-	private static final int DATABASE = 2;
-
+	protected static final int SOURCES = 0;
+	protected static final int BINARY = 1;
+	protected static final int DATABASE = 2;
 
 	private String[] sectionNames = {"Source folder", "Binary folder", "Database file"};
-	private String[] tipName = {"Source folder or URI for soundn files to process",
+	private String[] tipName = {"Source folder or URI for raw data files to process",
 			"Binary folder for output data", "Output database"};
 
-	private BatchControl batchControl;
+	protected BatchControl batchControl;
 
 	private BatchJobInfo jobInfo;
 
 
-	private JobDialog(Window parentFrame, BatchControl batchControl) {
+	protected JobDialog(Window parentFrame, BatchControl batchControl) {
 		super(parentFrame, "Create new job", false);
 		this.batchControl = batchControl;
 		databaseId = new JTextField(4);
@@ -79,15 +77,22 @@ public class JobDialog extends PamDialog {
 		c.gridx = 0;
 		c.gridy++;
 		c.gridwidth = 3;
-		jobSets = new JobSet[3];
-		addJobSet(0, mainPanel, c);
-		c.gridy++;
-		addJobSet(1, mainPanel, c);
-		c.gridy++;
-		addJobSet(2, mainPanel, c);
-		
+		int[] itemOrder = getSelectionOrder();
+		jobSets = new JobSet[itemOrder.length];
+		for (int i = 0; i < jobSets.length; i++) {
+			addJobSet(itemOrder[i], mainPanel, c);
+			c.gridy++;
+		}
+		setResizable(false);
 		setDialogComponent(mainPanel);
 	}
+	
+	/**
+	 * Get the order to display the controls in. This can be 
+	 * {0,1,2} or {2,1,0}, etc for SOURCES, BINARY and DATABASE
+	 * @return
+	 */
+	public abstract int[] getSelectionOrder();
 
 	private void addJobSet(int i, JPanel mainPanel, GridBagConstraints c) {
 		JPanel panel = new JPanel();
@@ -109,22 +114,31 @@ public class JobDialog extends PamDialog {
 		mainPanel.add(panel, c);
 		jobSets[i] = new JobSet(mainField, selButton);
 	}
-
-	protected void selectButton(int iSet) {
-		switch(iSet) {
-		case SOURCES:
-			selectInputSource();
-			break;
-		case BINARY:
-			selectBinary();
-			break;
-		case DATABASE:
-			selectDatabase();
-		}
-
+	
+	protected JobSet getJobSet(int type) {
+		return jobSets[type];
 	}
 
-	private void selectInputSource() {
+	protected void selectButton(int iSet) {
+		boolean change = false;
+		switch(iSet) {
+		case SOURCES:
+			change = selectInputSource();
+			break;
+		case BINARY:
+			change = selectBinary();
+			break;
+		case DATABASE:
+			change = selectDatabase();
+		}
+		if (change) {
+			selectionChanged(iSet);
+		}
+	}
+
+	protected abstract void selectionChanged(int iSet);
+
+	private boolean selectInputSource() {
 		PamFileChooser fc = new PamFileChooser();
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
@@ -139,12 +153,16 @@ public class JobDialog extends PamDialog {
 
 		if (ans == JFileChooser.APPROVE_OPTION) {
 			jobSets[SOURCES].setText(fc.getSelectedFile().toString());
-
+			return true;
 		}
+		else {
+			return false;
+		}
+		
 
 	}
 
-	private void selectBinary() {
+	private boolean selectBinary() {
 		PamFileChooser fc = new PamFileChooser();
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
@@ -163,10 +181,14 @@ public class JobDialog extends PamDialog {
 		if (ans == JFileChooser.APPROVE_OPTION) {
 			jobSets[BINARY].setText(fc.getSelectedFile().toString());
 
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 
-	private void selectDatabase() {
+	private boolean selectDatabase() {
 		/*
 		 *  this one is a bit trickier since the database may / need not actually exist.
 		 *  Further, we don't really know what type of database is going to be used in the output. 
@@ -215,11 +237,15 @@ public class JobDialog extends PamDialog {
 			else {
 				jobSets[DATABASE].setText(currFile.getAbsolutePath());
 			}
+			return true;
+		}
+		else {
+			return false;
 		}
 
 	}
 
-	private class JobSet {
+	protected class JobSet {
 
 		private JTextField mainField;
 
@@ -228,28 +254,21 @@ public class JobDialog extends PamDialog {
 		private JobSet(JTextField mainField, JButton selButton) {
 			this.mainField = mainField;
 			this.selectbutton = selButton;
+			mainField.setEditable(false);
 		}
 
-		private String getText() {
+		protected String getText() {
 			return mainField.getText();
 		}
 
-		private void setText(String text) {
+		protected void setText(String text) {
 			mainField.setText(text);
 		}
 
 	}
 
-	public static boolean showDialog(Window parentFrame, BatchControl batchControl, BatchDataUnit batchDataUnit) {
-		//		if (singleInstance == null) {
-		singleInstance = new JobDialog(parentFrame, batchControl);
-		//		}
-		singleInstance.setParams(batchDataUnit);
-		singleInstance.setVisible(true);
-		return singleInstance.isOk;
-	}
 
-	private void setParams(BatchDataUnit batchDataUnit) {
+	protected void setParams(BatchDataUnit batchDataUnit) {
 		this.batchDataUnit = batchDataUnit;
 		int dbId = batchDataUnit.getDatabaseIndex();
 		databaseId.setText(String.format("%d", dbId));

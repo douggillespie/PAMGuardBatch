@@ -33,16 +33,20 @@ import networkTransfer.send.NetworkSender;
 import offlineProcessing.OfflineTaskManager;
 import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
+import pambatch.config.BatchMode;
 import pambatch.config.BatchParameters;
 import pambatch.config.ExternalConfiguration;
 import pambatch.config.SettingsObservers;
 import pambatch.ctrl.BatchState;
 import pambatch.ctrl.BatchStateObserver;
+import pambatch.ctrl.ViewerDatabase;
 import pambatch.remote.RemoteAgentHandler;
 import pambatch.swing.BatchSetDialog;
 import pambatch.swing.BatchTabPanel;
 import pambatch.swing.CheckExistingDialog;
 import pambatch.swing.JobDialog;
+import pambatch.swing.OfflineJobDialog;
+import pambatch.swing.OnlineJobDialog;
 import pambatch.swing.SwingMenus;
 import pambatch.tasks.OfflineTaskDataUnit;
 import pambatch.tasks.TaskSelection;
@@ -82,6 +86,13 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	public BatchProcess getBatchProcess() {
 		return batchProcess;
 	}
+	/**
+	 * For dev, add following to PAMModel
+		mi = PamModuleInfo.registerControlledUnit(BatchControl.class.getName(), BatchControl.unitType);
+		mi.setToolTipText("Batch processing control");
+		mi.setModulesMenuGroup(utilitiesGroup);
+		mi.setMaxNumber(1);
+	 */
 
 	private static final String DEFAULTWINDOWSEXE = "C:\\Program Files\\Pamguard\\Pamguard.exe";
 	
@@ -494,7 +505,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	public void createJob() {
 		BatchDataUnit newJobData = new BatchDataUnit(System.currentTimeMillis(), null);
 //		batchProcess.getBatchLogging().logData(DBControlUnit.findConnection(), newJobData);
-		boolean ok = JobDialog.showDialog(getGuiFrame(), this, newJobData); 
+//		boolean ok = OnlineJobDialog.showDialog(getGuiFrame(), this, newJobData);
+		boolean ok = showJobDialog(newJobData);
 		if (ok) {
 			batchProcess.getBatchDataBlock().addPamData(newJobData);
 			batchProcess.getBatchDataBlock().updatePamData(newJobData, newJobData.getTimeMilliseconds());
@@ -505,6 +517,24 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			batchProcess.getBatchLogging().deleteData(newJobData);
 		}
 		checkConflictingJobs();
+	}
+	
+	/**
+	 * Open one of two nearly identical dialogs, the main difference
+	 * being the order information is controlled in and the 
+	 * behaviour of the Offline one when a new database is selected
+	 * since it will try to extract binary and source data automatically
+	 * @param jobData
+	 * @return
+	 */
+	private boolean showJobDialog(BatchDataUnit jobData) {
+		BatchMode batchMode = getBatchParameters().getBatchMode();
+		if (batchMode == BatchMode.NORMAL) {
+			return OnlineJobDialog.showDialog(getGuiFrame(), this, jobData);
+		}
+		else {
+			return OfflineJobDialog.showDialog(getGuiFrame(), this, jobData);
+		}
 	}
 
 	/**
@@ -620,7 +650,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 * @param dataUnit
 	 */
 	public void editJob(BatchDataUnit dataUnit) {
-		boolean ok = JobDialog.showDialog(getGuiFrame(), this, dataUnit); 
+//		boolean ok = OnlineJobDialog.showDialog(getGuiFrame(), this, dataUnit); 
+		boolean ok = showJobDialog(dataUnit);
 		if (ok) {
 			batchProcess.getBatchDataBlock().updatePamData(dataUnit, System.currentTimeMillis());
 		}
@@ -881,5 +912,17 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 */
 	public ExternalConfiguration getExternalConfiguration() {
 		return externalConfiguration;
+	}
+
+	/**
+	 * When managing offline tasks, it's necessary to extract a configuration from 
+	 * a representative database which will be stored as a psfx. The tasks in this 
+	 * can then be modified and pushed back into each database in each task that's to 
+	 * be run. 
+	 * @param outputDatabaseName
+	 */
+	public void extractDatabaseConfiguration(String databaseName) {
+		ViewerDatabase vdb = new ViewerDatabase(this, databaseName);
+		vdb.extractPSFX();
 	}
 }

@@ -87,6 +87,9 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 	public void checkButtons(MouseEvent e) {
 		checkRowSelection(e);
 		OfflineTaskDataUnit dataUnit = getDataUnit(getTable().rowAtPoint(e.getPoint()));
+		if (dataUnit == null) {
+			return;
+		}
 		OfflineTask task = dataUnit.getOfflineTask();
 		int selColumn = getTable().columnAtPoint(e.getPoint());
 		if (dataUnit == null || selColumn < 0) {
