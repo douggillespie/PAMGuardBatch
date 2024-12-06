@@ -87,6 +87,15 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 		}
 		popMenu.show(e.getComponent(), e.getX(), e.getY());
 	}
+	
+	/**
+	 * Override default behaviour which shows reversed order in 
+	 * normal mode. We don't want that. 
+	 */
+	@Override
+	public int getDataIndexForRow(int tableRow) {
+		return tableRow;
+	}
 
 	@Override
 	public Object getColumnData(BatchDataUnit dataUnit, int column) {

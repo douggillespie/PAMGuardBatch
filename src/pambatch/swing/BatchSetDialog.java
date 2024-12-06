@@ -96,6 +96,8 @@ public class BatchSetDialog extends PamDialog {
 		
 		setResizable(true);
 		setDialogComponent(mainPanel);
+		
+		setHelpPoint("docs.batchjobs");
 	}
 	
 	public static ArrayList<BatchJobInfo> showDialog(Window parentFrame, BatchControl batchControl) {

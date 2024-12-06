@@ -85,6 +85,8 @@ abstract public class JobDialog extends PamDialog {
 		}
 		setResizable(false);
 		setDialogComponent(mainPanel);
+
+		setHelpPoint("docs.batchjobs");
 	}
 	
 	/**
@@ -338,6 +340,11 @@ abstract public class JobDialog extends PamDialog {
 	public void restoreDefaultSettings() {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public String getHelpPoint() {
+		return super.getHelpPoint();
 	}
 
 }

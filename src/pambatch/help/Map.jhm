@@ -6,12 +6,18 @@
 
 <mapID target="popup_icon" url="topic.gif "/>
 
+<mapID target="docs.batchrun" url="docs/batchrun.html"/>
+
+<mapID target="docs.batchconfiguration" url="docs/batchconfiguration.html"/>
+
 <mapID target="index" url="index.html"/>
+
+<mapID target="docs.batchjobs" url="docs/batchjobs.html"/>
 
 <mapID target="docs.batchoverview" url="docs/batchoverview.html"/>
 
-<mapID target="topic" url="topic.gif"/>
+<mapID target="docs.images.popup" url="docs/images/popup.gif"/>
 
-<mapID target="images.popup" url="images/popup.gif"/>
+<mapID target="topic" url="topic.gif"/>
 
 </map>

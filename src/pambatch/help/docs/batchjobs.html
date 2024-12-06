@@ -7,18 +7,22 @@
 
 <body>
 
+	<h1>Batch Processing</h1>
 	<h2>Creating Batch Jobs</h2>
 	<br>
 	<p>Before you start processing, you need to set up one or more "jobs". Each job requires the name
 	of a folder containing raw sound input data, the name of an output folder for binary data and
 	the name of a database. </p>
-	<p>The information about each job is stored in a table called Batch_processing.</p>
+	<p>The information about each job is stored in a databsae table called Batch_processing.</p>
 	
 	
 	<h3>Setting up single jobs</h3>
 	<p>To set up a single batch job, click on "Create Job" and a dialog will appear where you can enter
 	the folder for source sound files, the name of the output binary folder and the name of the output
 	database. </p>
+	
+	<img src="images/jobdialog.png">
+	<br><br>
 		
 	<h3>Setting up multiple jobs</h3>
 	<p>If all of your raw data are in multiple folders on the same hard drive, then it's easy to set up multiple
@@ -26,7 +30,23 @@
 	data. The files within the sub folders will be searched for sound files to see how many jobs to create. Then 
 	select a root folder for databases and a root folder for binary file output. The jobs will then be automatically
 	created with output binary folder names and database names based on the names of the sub folders containing 
-	the raw data. 
+	the raw data. For example, if you had data from six deployments named "Deploy1" ... "Deploy6" all in a folder
+	D:/BatchDataSample/raw as shown in the figure below, then simply set the source folder to D:/BatchDataSample/raw
+	and the program will find the six sub folders. </p>
+	<img src="images/explorer1.png" height="300px"> <img src="images/jobsdialog.png" height="300px">
+	<br>
+	<p>Then select output folders for the binary data and for the databases, which need not be in the same root, but could 
+	be anywhere else on your system (e.g. the raw data may be on a server or external hard drive but you write the 
+	outputs to your local C drive)</p>
+	<p>Once you close the dialog, all six jobs will be created and will appear in the jobs table.</p>
+	<img src="images/jobsdialog2.png" height="300px">
+	<img src="images/jobstable.png" height="300px">
+	<br>
+	<p>Note that nothing will appear yet in the selected output folder. Binary output folders and databases will be
+	created when each job runs. After all six jobs were complete the output folder looked like this,
+	containing six folders of binary data and six databases:</p>
+	<img src="images/exploreroutput.png">
+	
 	
 	<h3>Deleting Jobs</h3>
 	<p>Created jobs will all appear in the main table in the lower half of the display. You can delete
@@ -38,6 +58,6 @@
 	<p>Individual jobs can be edited by right clicking on a line in the main jobs table.</p>
 	
 	<br><br>
-	<p>Previous: <a href="batchconfiguration.html">Configuring the batch processor.</a>
-	<p>Next: <a href="batchrun.html">Running batch jobs.</a>
+	<p CLASS="nextLink"><a href="batchconfiguration.html">Previous: Configuring the batch processor.</a>
+	<p CLASS="prevtLink"><a href="batchrun.html">Next: Running batch jobs.</a>
 </body>
