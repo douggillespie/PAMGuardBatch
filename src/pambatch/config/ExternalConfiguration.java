@@ -28,6 +28,8 @@ public class ExternalConfiguration implements SettingsObserver {
 
 	private OfflineTaskDataBlock taskDataBlock;
 
+	private PamSettingsGroup settingsGroup;
+
 	public ExternalConfiguration(BatchControl batchControl) {
 		super();
 		this.batchControl = batchControl;
@@ -53,26 +55,52 @@ public class ExternalConfiguration implements SettingsObserver {
 
 		extConfiguration.getPamControlledUnits().clear();
 
-		String psfxName = batchControl.getBatchParameters().getMasterPSFX();
-		if (psfxName == null) {
+		settingsGroup = getSettingsGroup(true);
+		if (settingsGroup == null) {
 			return;
 		}
-		File psfxFile = new File(psfxName);
-		if (psfxFile.exists() == false) {
-			return;
-		}
-
-		PamSettingsGroup settingsGroup = PSFXReadWriter.getInstance().loadFileSettings(psfxFile);
 
 		loadSettingsGroup(settingsGroup);
 
 		extractTasks();
 
 	}
+	
+	/**
+	 * Get the currently loaded settings group. Will need to extract specific
+	 * module settings from within this. 
+	 * @return
+	 */
+	public PamSettingsGroup getSettingsGroup() {
+		return getSettingsGroup(true);
+	}
+	
+	/**
+	 * Get the settings group, force reload if wanted. 
+	 * @param forceReload
+	 * @return
+	 */
+	public PamSettingsGroup getSettingsGroup(boolean forceReload) {		
+		if (forceReload) {
+			settingsGroup = null;
+		}
+		if (settingsGroup == null) {		
+			String psfxName = batchControl.getBatchParameters().getMasterPSFX();
+			if (psfxName == null) {
+				return null;
+			}
+			File psfxFile = new File(psfxName);
+			if (psfxFile.exists() == false) {
+				return null;
+			}
+			settingsGroup = PSFXReadWriter.getInstance().loadFileSettings(psfxFile);
+		}
+		return settingsGroup;
+	}
 
 	private void extractTasks() {
 		ArrayList<OfflineTask> taskList = extConfiguration.getAllOfflineTasks();
-		taskList = OfflineTaskManager.getManager().getAllOfflineTasks();
+//		taskList = OfflineTaskManager.getManager().getAllOfflineTasks();
 		taskDataBlock.clearAll();
 		for (OfflineTask task : taskList) {
 			OfflineTaskDataUnit du = new OfflineTaskDataUnit(System.currentTimeMillis(), task);
@@ -81,6 +109,11 @@ public class ExternalConfiguration implements SettingsObserver {
 	}
 
 
+	/**
+	 * From the settings group, create all the modules for PAMGuard so that they can be interrogated for offline 
+	 * tasks, etc. 
+	 * @param settingsGroup
+	 */
 	private void loadSettingsGroup(PamSettingsGroup settingsGroup) {
 		if (settingsGroup == null) {
 			return;
@@ -116,6 +149,13 @@ public class ExternalConfiguration implements SettingsObserver {
 			extConfiguration.addControlledUnit(module);
 		}
 		
+		/**
+		 * This will put main settings into PAMControlledUnits, but will NOT do anything else for
+		 * each module. This isn't great since many modules have multiple settings objects, which are
+		 * all controlled from the global settings list that they will have all registered with. In batch mode, where
+		 * we're trying to have multiple settings loaded in the same model, a lot of those settings will have gotten 
+		 * overwritten when the modle is loaded, which messed everything up big time. 
+		 */
 		for (PamControlledUnit unit : extConfiguration.getPamControlledUnits()) {
 			if (unit instanceof PamSettings == false) {
 				continue;

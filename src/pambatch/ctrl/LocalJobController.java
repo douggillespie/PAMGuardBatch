@@ -28,14 +28,14 @@ public class LocalJobController extends JobController {
 	@Override
 	public boolean launchJob(ArrayList<String> pamguardOptions) {
 		ArrayList<String> totalCommand = new ArrayList<>();
-		totalCommand.add(getBatchControl().findStartExecutable());
+		totalCommand.addAll(getBatchControl().findStartExecutable());
 		totalCommand.addAll(pamguardOptions);
 		
 		String singleLine = getOneLineCommand(totalCommand);
 
 		jobProcess = null;
 		try {
-			jobProcess = Runtime.getRuntime().exec(singleLine);
+			jobProcess = Runtime.getRuntime().exec(singleLine); // should change to a command array. 
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			return false;

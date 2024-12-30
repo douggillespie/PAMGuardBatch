@@ -26,6 +26,12 @@ import pambatch.config.BatchMode;
 import pambatch.config.BatchParameters;
 import pambatch.config.SettingsObservers;
 
+/**
+ * Small panel in top left of main display for chosing run mode and creating
+ * jobs and job sets. 
+ * @author dg50
+ *
+ */
 public class JobControlPanel extends BatchPanel {
 
 	private BatchControl batchControl;
@@ -126,7 +132,7 @@ public class JobControlPanel extends BatchPanel {
 	protected void batchModeChange() {
 		BatchMode mode = (BatchMode) batchMode.getSelectedItem();
 		if (SMRUEnable.isDevEnable() == false && mode == BatchMode.VIEWER) {
-			WarnOnce.showWarning("Offline tasks not yet suppored", 
+			WarnOnce.showWarning("Offline tasks not yet supported", 
 					"Currently only supporting raw data processing. Viewer offline tasks will follow shortly", 
 					WarnOnce.WARNING_MESSAGE);
 			batchMode.setSelectedIndex(0);

@@ -13,7 +13,7 @@ import pambatch.config.ExternalConfiguration;
 import pambatch.config.SettingsObserver;
 import pambatch.config.SettingsObservers;
 
-public class TaskTablePanel  implements BatchJobsPanel, SettingsObserver {
+public class TaskTablePanel implements BatchJobsPanel, SettingsObserver {
 
 	private JPanel mainPanel;
 

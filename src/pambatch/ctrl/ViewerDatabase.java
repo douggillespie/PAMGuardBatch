@@ -8,12 +8,18 @@ import Acquisition.AcquisitionParameters;
 import Acquisition.FolderInputParameters;
 import Acquisition.FolderInputSystem;
 import PamController.PSFXReadWriter;
+import PamController.PamControlledUnit;
 import PamController.PamControlledUnitSettings;
 import PamController.PamController;
 import PamController.PamSettingsGroup;
+import PamController.UsedModuleInfo;
+import PamModel.PamModel;
+import PamModel.PamModuleInfo;
 import binaryFileStorage.BinaryStore;
 import binaryFileStorage.BinaryStoreSettings;
 import generalDatabase.DBControlSettings;
+import generalDatabase.DBSettingsStore;
+import generalDatabase.LogSettings;
 import generalDatabase.PamConnection;
 import pambatch.BatchControl;
 import pambatch.config.SettingsObservers;
@@ -30,19 +36,19 @@ import pambatch.config.SettingsObservers;
 public class ViewerDatabase {
 
 	private String databaseName;
-	
+
 	private DBControlSettings dbCtrlSettings;
 
 	private PamSettingsGroup dbSettings;
 
 	private BatchControl batchControl;
-	
+
 	public ViewerDatabase(BatchControl batchControl, String databaseName) {
 		this.batchControl = batchControl;
 		this.databaseName = databaseName;
 		dbCtrlSettings = new DBControlSettings();
 	}
-	
+
 	private PamSettingsGroup getSettings() {
 		if (dbSettings == null) {
 			dbSettings = extractSettings(databaseName);
@@ -64,6 +70,89 @@ public class ViewerDatabase {
 		return new PamSettingsGroup(System.currentTimeMillis(), settings);
 	}
 	
+	/**
+	 * Does it have a module ? This should be listed in the PamController settings. 
+	 * @param unitType
+	 * @param unitName
+	 * @return
+	 */
+	public boolean hasModule(String unitType, String unitName) {
+
+		ArrayList<UsedModuleInfo> moduleInfo = getModulesList();
+		if (moduleInfo == null) {
+			return false;
+		}
+
+		for (UsedModuleInfo aModule: moduleInfo) {
+			if (aModule.getUnitType().equals(unitType) && aModule.getUnitName().equals(unitName)) {
+				return true;
+			}
+		}
+		return false;
+ 	}
+	
+	/**
+	 * Get the modules list which is extracted from the PamController settings. 
+	 * @return
+	 */
+	public ArrayList<UsedModuleInfo> getModulesList() {		
+		PamControlledUnitSettings cuSet = findSettings(PamController.getInstance().getUnitType(), PamController.getInstance().getUnitName());
+		if (cuSet == null) {
+			return null;
+		}
+		ArrayList<UsedModuleInfo> moduleInfo = null;
+		try {
+			moduleInfo = (ArrayList<UsedModuleInfo>) cuSet.getSettings();
+		}
+		catch (ClassCastException e) {
+			return null;
+		}
+		return moduleInfo;
+	}
+
+	public boolean addModule(String unitType, String unitName, String className) {		
+		ArrayList<UsedModuleInfo> moduleInfo = getModulesList();
+		if (moduleInfo == null) {
+			return false;
+		}
+		PamModuleInfo modInf = PamModuleInfo.findModuleInfo(className);
+		if (modInf == null) {
+			System.out.printf("Unable to find info for module class %s\n", className);
+		}
+		
+		// need to find the moduleinfo from the PamModel. 
+//		PamModel.getPamModel().
+		UsedModuleInfo newModule = new UsedModuleInfo(className, unitType, unitName);
+		moduleInfo.add(newModule);
+		return true;
+	}
+
+	/**
+	 * rewrite the settings to the database. 
+	 * @return true if it seems to have worked OK, false otherwise.  
+	 */
+	public boolean reWriteSettings() {
+		boolean dbOpen = dbCtrlSettings.openDatabase(databaseName);
+		if (dbOpen == false) {
+			return false;
+		}
+		PamConnection con = dbCtrlSettings.getConnection();
+		if (con == null) {
+			return false;
+		}
+		LogSettings viewerLog = dbCtrlSettings.getDbProcess().getLogViewerSettings();
+		viewerLog.saveSettings(dbSettings, System.currentTimeMillis());
+//		viewerLog.logSettings(dbSettings.,  System.currentTimeMillis());
+//		DBSettingsStore dbSettingsStore = dbCtrlSettings.getSettingsStore();
+//		dbSettingsStore.addSettingsGroup(dbSettings); // push the updated settings to the end of the list. 
+//		// and tell the database to save it's settings
+//		// don't call saveSettings since that just pulls settings from the modules, which is not what we need. 
+////		dbCtrlSettings.saveSettingsToDB();
+//		dbSettingsStore.
+		dbCtrlSettings.pamClose();
+		return true;
+	}
+
 	public BinaryStoreSettings getBinarySettings() {
 		PamControlledUnitSettings binSet = findSettings(BinaryStore.defUnitType, null);
 		if (binSet == null) {
@@ -78,7 +167,7 @@ public class ViewerDatabase {
 		}
 		return binSettings;
 	}
-	
+
 	public FolderInputParameters getDaqSettings() {
 		PamControlledUnitSettings aSet = findSettings(AcquisitionControl.unitType, null);
 		if (aSet == null) {
@@ -116,7 +205,7 @@ public class ViewerDatabase {
 	 * @return found settings, or null. 
 	 */
 	public PamControlledUnitSettings findSettings(String unitType, String unitName) {
-		dbSettings = extractSettings(databaseName);
+		dbSettings = getSettings();
 		if (dbSettings == null) {
 			return null;
 		}
@@ -130,6 +219,21 @@ public class ViewerDatabase {
 			return aSet;
 		}
 		return null;
+	}
+
+	/**
+	 * Get all unit settings for a given unit name. 
+	 * @param unitName unit name
+	 * @return arrray list of settings. 
+	 */
+	public ArrayList<PamControlledUnitSettings> findSettingsForName(String unitName) {
+		ArrayList<PamControlledUnitSettings> sets = new ArrayList<PamControlledUnitSettings>();
+		for (PamControlledUnitSettings aSet : dbSettings.getUnitSettings()) {
+			if (aSet.getUnitName().equalsIgnoreCase(unitName)) {
+				sets.add(aSet);
+			}
+		}
+		return sets;
 	}
 
 	public void extractPSFX() {
@@ -148,10 +252,27 @@ public class ViewerDatabase {
 			batchControl.getBatchParameters().setMasterPSFX(aName.getAbsolutePath());
 			batchControl.settingsChange(SettingsObservers.CHANGE_CONFIG);
 		}
-		
-	}
-	
-	
 
-	
+	}
+
+	/**
+	 * Replace the settings in the configuration with ones from the one we want to run. 
+	 * @param aSet
+	 */
+	public boolean replaceSettings(PamControlledUnitSettings aSet) {
+		return dbSettings.replaceSettings(aSet);
+	}
+
+	/**
+	 * Add settings to the database list. This will happen if a new module was added to 
+	 * the configuration and should put the required settings in their place. 
+	 * @param aSet
+	 */
+	public void addSettings(PamControlledUnitSettings aSet) {
+		dbSettings.addSettings(aSet);
+	}
+
+
+
+
 }
