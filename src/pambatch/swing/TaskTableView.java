@@ -17,7 +17,9 @@ import pambatch.tasks.TaskSelection;
 
 public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 
-	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select", "Configure"};
+//	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select", "Configure"};
+	// remove configur eoption for now since it's too many settings versions. Use launch option for PAMGuard instead. 
+	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select"};
 	private BatchControl batchControl;
 
 	public TaskTableView(BatchControl batchControl, PamDataBlock<OfflineTaskDataUnit> pamDataBlock, String displayName) {

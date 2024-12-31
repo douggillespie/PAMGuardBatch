@@ -45,13 +45,14 @@ import pambatch.ctrl.BatchState;
 import pambatch.ctrl.BatchStateObserver;
 import pambatch.ctrl.ViewerDatabase;
 import pambatch.remote.RemoteAgentHandler;
-import pambatch.swing.BatchSetDialog;
+import pambatch.swing.NormalSetDialog;
 import pambatch.swing.BatchTabPanel;
 import pambatch.swing.CheckExistingDialog;
 import pambatch.swing.JobDialog;
 import pambatch.swing.OfflineJobDialog;
 import pambatch.swing.OnlineJobDialog;
 import pambatch.swing.SwingMenus;
+import pambatch.swing.ViewerSetDialog;
 import pambatch.tasks.OfflineTaskDataUnit;
 import pambatch.tasks.TaskSelection;
 import pamguard.GlobalArguments;
@@ -658,13 +659,45 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 * i.e. it gets a source folder, then generates a set for each sub folder of data. 
 	 */
 	public void createJobSet() {
-		ArrayList<BatchJobInfo> jobSets = BatchSetDialog.showDialog(this.getGuiFrame(), this);
+		BatchMode batchMode = getBatchParameters().getBatchMode();
+		if (batchMode == BatchMode.NORMAL) {
+			createNormalJobSet();
+		}
+		else {
+			createViewerJobSet();
+		}
+
+	}
+	
+	/**
+	 * Show dialog to create jobs for normal mode. Will ask for source folder and 
+	 * dest folders for binary and database output
+	 */
+	private void createNormalJobSet() {		
+		ArrayList<BatchJobInfo> jobSets = NormalSetDialog.showDialog(this.getGuiFrame(), this);
 		if (jobSets == null) {
 			return;
 		}
 		for (BatchJobInfo jobSet : jobSets) {
 			BatchDataUnit newJobData = new BatchDataUnit(System.currentTimeMillis(), jobSet);
-//			batchProcess.getBatchLogging().logData(DBControlUnit.findConnection(), newJobData);
+			//		batchProcess.getBatchLogging().logData(DBControlUnit.findConnection(), newJobData);
+			batchProcess.getBatchDataBlock().addPamData(newJobData);
+		}
+		checkConflictingJobs();
+	}
+	
+	/**
+	 * Show dialog to create jobs for batch mode. Will ask for a folder of databases, then 
+	 * extract binary and source folders from the individual databases. 
+	 */
+	private void createViewerJobSet() {
+		ArrayList<BatchJobInfo> viewerSets = ViewerSetDialog.showDialog(this.getGuiFrame(), this); 
+		if (viewerSets == null) {
+			return;
+		}
+		for (BatchJobInfo jobSet : viewerSets) {
+			BatchDataUnit newJobData = new BatchDataUnit(System.currentTimeMillis(), jobSet);
+			//		batchProcess.getBatchLogging().logData(DBControlUnit.findConnection(), newJobData);
 			batchProcess.getBatchDataBlock().addPamData(newJobData);
 		}
 		checkConflictingJobs();

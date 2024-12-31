@@ -22,6 +22,7 @@ import generalDatabase.DBSettingsStore;
 import generalDatabase.LogSettings;
 import generalDatabase.PamConnection;
 import pambatch.BatchControl;
+import pambatch.config.BatchJobInfo;
 import pambatch.config.SettingsObservers;
 
 /**
@@ -153,6 +154,10 @@ public class ViewerDatabase {
 		return true;
 	}
 
+	/**
+	 * Get the binary store settings. 
+	 * @return binary store settings or null. 
+	 */
 	public BinaryStoreSettings getBinarySettings() {
 		PamControlledUnitSettings binSet = findSettings(BinaryStore.defUnitType, null);
 		if (binSet == null) {
@@ -272,7 +277,34 @@ public class ViewerDatabase {
 		dbSettings.addSettings(aSet);
 	}
 
+	/**
+	 * Pull the full job info out of a viewer databse. 
+	 * @param databaseFile
+	 * @return
+	 */
+	public static BatchJobInfo extractJobInfo(String databaseFile) {
+		ViewerDatabase viewDB = new ViewerDatabase(null, databaseFile);
+		String soundFolder = null;
+		String binFolder = null;
+		PamSettingsGroup allSettings = viewDB.getSettings();
+		if (allSettings == null) {
+			return null; // probably not a viewer datatbase. 
+		}
+		BinaryStoreSettings binSettings = viewDB.getBinarySettings();
+		if (binSettings != null) {
+			binFolder = binSettings.getStoreLocation();
+		}
+		FolderInputParameters daqSettings = viewDB.getDaqSettings();
+		if (daqSettings != null) {
+			soundFolder = daqSettings.getMostRecentFile();
+		}
 
+		// should probably worry if the binary store is empty ? Though it's possible that there
+		// is only database data. So let it pass. 
+		BatchJobInfo batchJobInfo = new BatchJobInfo(soundFolder, binFolder, databaseFile);
+		return batchJobInfo;
+	}
 
+	
 
 }
