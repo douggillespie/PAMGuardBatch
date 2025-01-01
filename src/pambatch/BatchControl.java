@@ -530,7 +530,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 
 	/**
 	 * Command line options for normal mode operations, i.e. processing a ton of 
-	 * sound files with a standard psfx file. 
+	 * sound files with a single standard psfx file. 
 	 * @param nextJob
 	 * @return
 	 */

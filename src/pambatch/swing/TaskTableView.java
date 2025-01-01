@@ -26,6 +26,7 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		super(pamDataBlock, displayName);
 		this.batchControl = batchControl;
 		getTable().addMouseListener(new MouseAction());
+		
 		showViewerScrollControls(false);
 	}
 
@@ -52,6 +53,11 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			return null;
 		}
 		PamControlledUnit pamModule = task.getTaskControlledUnit();
+		if (pamModule == null) {
+			System.out.println("Task with no module " + task.getLongName());
+			pamModule = task.getTaskControlledUnit();
+			return null;
+		}
 		TaskSelection taskSelection = batchControl.getBatchParameters().getTaskSelection(task);
 		switch (column) {
 		case 0:
@@ -84,6 +90,12 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		}
 		
 		return null;
+	}
+
+	@Override
+	public int getDataIndexForRow(int tableRow) {
+		// return natural order.
+		return tableRow;
 	}
 
 	public void checkButtons(MouseEvent e) {

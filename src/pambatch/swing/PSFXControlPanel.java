@@ -30,6 +30,7 @@ import PamView.dialog.PamDialog;
 import PamView.dialog.PamGridBagContraints;
 import PamView.dialog.PamLabel;
 import PamView.dialog.PamTextField;
+import PamView.help.PamHelp;
 import PamView.panel.PamPanel;
 import nidaqdev.networkdaq.Shell;
 import pambatch.BatchControl;
@@ -47,19 +48,21 @@ public class PSFXControlPanel extends BatchPanel {
 
 	private JButton browseButton, openButton, viewModel;
 
-	private JTextField localExecutable; // going to launch from the installed exe, not from the jar file if possible. 
+	private JTextField localExecutable; // going to launch from the installed exe, not from the jar file if possible.
 
 	private BatchControl batchControl;
 
 	private BatchParameters batchParams;
-	
+
 	private JCheckBox noGUI;
 
-	//	private JTextField jreName;
-	//	
-	//	private JTextField maxMemory;
-	//	
-	//	private JTextField vmOptions;
+	private JButton helpButton;
+
+	// private JTextField jreName;
+	//
+	// private JTextField maxMemory;
+	//
+	// private JTextField vmOptions;
 
 	public PSFXControlPanel(BatchControl batchControl) {
 		super(batchControl, new BorderLayout());
@@ -84,7 +87,7 @@ public class PSFXControlPanel extends BatchPanel {
 			}
 		});
 		viewModel.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				viewConfiguration();
@@ -99,7 +102,7 @@ public class PSFXControlPanel extends BatchPanel {
 		setLayout(new BorderLayout());
 		JPanel psfxPanel = new PamPanel();
 		this.add(psfxPanel, BorderLayout.WEST);
-		psfxPanel.setLayout( new GridBagLayout());
+		psfxPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new PamGridBagContraints();
 		psfxPanel.add(new PamLabel(" PSFX Configuration to run  "), c);
 //		c.gridx++;
@@ -119,6 +122,7 @@ public class PSFXControlPanel extends BatchPanel {
 
 		c.gridx = 0;
 		c.gridy++;
+		c.gridwidth = 4;
 		noGUI = new JCheckBox("Run processes without GUI (Headless)");
 		noGUI.addActionListener(new ActionListener() {
 			@Override
@@ -127,32 +131,38 @@ public class PSFXControlPanel extends BatchPanel {
 			}
 		});
 		psfxPanel.add(noGUI, c);
-		//		JPanel topPanel = new BatchPanel(new BorderLayout());
-		//		JPanel tlPanel = new BatchPanel(new BorderLayout());
-		//		JPanel trPanel = new BatchPanel(new GridBagLayout());
-		//		topPanel.add(BorderLayout.CENTER, tlPanel);
-		//		topPanel.add(BorderLayout.EAST, trPanel);
-		//		tlPanel.add(BorderLayout.WEST, new PamLabel(" PSFX Configuration to run  "));
-		//		tlPanel.add(BorderLayout.CENTER, psfxName);
-		//		
-		//		
-		//		trPanel.add(browseButton, c);
-		//		c.gridx++;
-		//		trPanel.add(openButton, c);
-		//		this.add(BorderLayout.NORTH, topPanel);
+
+		helpButton = new JButton("Help");
+		helpButton.setToolTipText("Help pages for batch processing");
+		helpButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				helpPressed();
+			}
+		});
+//		c.gridy++;
+		c.gridx += 3;
+		c.anchor = GridBagConstraints.EAST;
+		c.fill = GridBagConstraints.NONE;
+		psfxPanel.add(helpButton, c);
+
 		setToolTips();
 	}
-	
+	protected void helpPressed() {
+		String hp = "docs.batchoverview";
+		PamHelp.getInstance().displayContextSensitiveHelp(hp);
+	}
+
 	@Override
 	public void setParams(BatchParameters batchParams) {
 		this.batchParams = batchParams;
 		psfxName.setText(batchParams.getMasterPSFX());
 		this.useThisPSFX.setSelected(batchParams.useThisPSFX);
-		
+
 		enableControls();
 		setToolTips();
 	}
-	
+
 	private void enableControls() {
 //		boolean isUseThis = useThisPSFX.isSelected();
 //		browseButton.setEnabled(!isUseThis);
@@ -164,12 +174,11 @@ public class PSFXControlPanel extends BatchPanel {
 	}
 
 	private void setToolTips() {
-	
+
 		BatchMode batchMode = batchControl.getBatchParameters().getBatchMode();
 		if (batchMode == BatchMode.NORMAL) {
 			browseButton.setToolTipText("Select PSFX file for data processing");
-		}
-		else {
+		} else {
 			browseButton.setToolTipText("Select extracted PSFX file, or extract settings from task database");
 		}
 		openButton.setToolTipText("Show and edit configuration in PAMGuard");
@@ -188,7 +197,7 @@ public class PSFXControlPanel extends BatchPanel {
 			batchParams.useThisPSFX = useThisPSFX.isSelected();
 		}
 	}
-	
+
 	private boolean hasPSFX() {
 		if (batchParams == null) {
 			return false;
@@ -218,7 +227,8 @@ public class PSFXControlPanel extends BatchPanel {
 
 	protected void launchPSFX() {
 		/**
-		 * Having serious trub launching clone within eclipse, so just use installed version. 
+		 * Having serious trub launching clone within eclipse, so just use installed
+		 * version.
 		 */
 		String psfx = psfxName.getText();
 		File psfxFile = new File(psfx);
@@ -227,20 +237,20 @@ public class PSFXControlPanel extends BatchPanel {
 			return;
 		}
 		batchControl.launchPamguard(psfx, false);
-		
-		// can we get the PAMGuard jar that this is running ? 
-		//		String jar = "C:/Users/dg50/source/repos/PAMGuardDG/target/classes/";
-		//		String java = "C:\\Program Files\\Java\\jdk-16.0.2\\bin\\java.exe";
-		//		String cmd = String.format("\"%s\" -cp \"%s\" pamguard.Pamguard", java, jar);
-		//		Process proc = null;
-		//		try {
-		//			 proc = Runtime.getRuntime().exec(cmd);
-		////			proc.getOutputStream()
-		//		} catch (IOException e) {
-		//			// TODO Auto-generated catch block
-		//			e.printStackTrace();
-		//		}
-		//		System.out.println(cmd);
+
+		// can we get the PAMGuard jar that this is running ?
+		// String jar = "C:/Users/dg50/source/repos/PAMGuardDG/target/classes/";
+		// String java = "C:\\Program Files\\Java\\jdk-16.0.2\\bin\\java.exe";
+		// String cmd = String.format("\"%s\" -cp \"%s\" pamguard.Pamguard", java, jar);
+		// Process proc = null;
+		// try {
+		// proc = Runtime.getRuntime().exec(cmd);
+		//// proc.getOutputStream()
+		// } catch (IOException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// System.out.println(cmd);
 
 //		final String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
 //		File currentJar = null;
@@ -269,7 +279,7 @@ public class PSFXControlPanel extends BatchPanel {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-		//		  System.exit(0);
+		// System.exit(0);
 //		// https://learn.microsoft.com/en-us/troubleshoot/windows-client/shell-experience/command-line-string-limitation
 //	      StringBuilder cmd = new StringBuilder();
 //	      cmd.append("\"");
@@ -303,10 +313,11 @@ public class PSFXControlPanel extends BatchPanel {
 	}
 
 	/**
-	 * View the configuratoin in the model viewer. 
+	 * View the configuratoin in the model viewer.
 	 */
 	protected void viewConfiguration() {
-		PamObjectViewer.Show(PamController.getMainFrame(), batchControl.getExternalConfiguration().getExtConfiguration());
+		PamObjectViewer.Show(PamController.getMainFrame(),
+				batchControl.getExternalConfiguration().getExtConfiguration());
 	}
 
 }

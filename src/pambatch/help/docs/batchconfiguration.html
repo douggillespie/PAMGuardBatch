@@ -1,8 +1,8 @@
 <html>
 
 <head>
-	<LINK href="../pamHelpStylesheet.css" type="text/css" rel="STYLESHEET">
-	<title>Batch Processing</title>
+<LINK href="../pamHelpStylesheet.css" type="text/css" rel="STYLESHEET">
+<title>Batch Processing</title>
 </head>
 
 <body>
@@ -10,34 +10,67 @@
 	<h1>Batch Processing</h1>
 	<h2>Batch Processor Configuration</h2>
 	<br>
-	<p>To configure the batch processor, start PAMGuard in 
-<a href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">normal mode</a>
-		and add two module: a <a href="_mainHelp_utilities/generalDatabaseHelp/docsdatabase_database.html">database</a> 
-		and the batch processor module.</p>
-		<p>No other modules should be added to the configuration, except perhaps a
-		<a href="_mainHelp_utilities/userInputHelp/docs/userinput.html">User Input</a> module which would allow you to make notes about what you've been doing with the
-		batch processor.
-		<p>On now account should you add any Sound Processing, or Detection, Classification, or Localisation modules to this configuration which should now 
-		look something like the image below.</p>
-		<br>
-		<img src="images/batch_empty.png" width="900px">
-		<br><br>		
-		<h3>Detector Configuration</h3>
-		<p>The detectors and other sound processing you want to perform on your data are all controlled from the
-		Configuration panel at the top of the display. </p>
-		<p>The most common thing to do, is to take a configuration file that you are already happy with, and have
-		tested on some of the data, and select that configuration using the Browse button, however, you can also 
-		use the Browse button to create an empty configuration to work with.<p>
-		<p>To view or modify the configuration, press "Launch Configuration". This will open the configuration in 
-		a separate PAMGuard window where you can view and modify any of the sound processing and detector settings.</p>
-		<p>Don't worry about which folder of sound files, database, and binary store are set in the configuration. These
-		will all be overwritten with new values for each job when it runs. </p>
-		<p><b>Remember to save the configuration when you've made modification, or the changes may not get used
-		when you come to process new data</b></p>
-		
-	
+	<p>
+		Whether you are planning to run jobs in <a href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">Normal
+			Mode</a> to process raw data, or whether you plan to use
+			<a href="_mainHelp_overview/overview/PamMasterHelp/docs/viewerMode.html">Viewer
+			Mode</a> to run tasks on processed data, the Batch Processor module always
+			runs in <a href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">Normal
+			Mode</a></p>
+		<p>To configure the batch processor, start PAMGuard in <a
+			href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">normal
+			mode</a> with a new / blank configuration and add two modules: a <a
+			href="_mainHelp_utilities/generalDatabaseHelp/docsdatabase_database.html">database</a>
+		and the batch processor module.
+	</p>
+	<p>
+		No other modules should be added to the configuration, except perhaps
+		a <a href="_mainHelp_utilities/userInputHelp/docs/userinput.html">User
+			Input</a> module which would allow you to make notes about what you've
+		been doing with the batch processor.</p>
+	<p>On now account should you add any Sound Processing, or
+		Detection, Classification, or Localisation modules to this
+		configuration which should now look something like the image below.</p>
 	<br>
-	<p CLASS="prevLink"><a href="batchoverview.html">Previous: Batch Processor overview.</a></p>
-	<p CLASS="nextLink"><a href="batchjobs.html">Next: Creating Batch Jobs.</a></p>
-	<br><br>
+	<img src="images/batch_empty.png" width="900">
+	<br>
+	<br>
+	<h3>Select Operation Mode</h3>
+	<p>In the top left "Job Control" panel select either "Raw data processing (normal mode)"
+	or "Offline tasks (viewer mode)" from the drop-down menu. When you change this selection you'll notice
+	that the display panels below change slightly reflecting the different available options for each operation mode. </p>
+	
+	
+	<h3>Detector Configuration</h3>
+	<p>The detectors and other sound processing you want to perform on
+		your data are all controlled from the Configuration panel at the top
+		of the display.</p>
+	<p>The most common thing to do, is to take a configuration file
+		that you are already happy with, and have tested on some of the data,
+		and select that configuration using the Browse button, however, you
+		can also use the Browse button to create an empty configuration to
+		work with.	</p>
+	<p>To view or modify the configuration, press "Launch
+		Configuration". This will open the configuration in a separate
+		PAMGuard window where you can view and modify any of the sound
+		processing and detector settings.</p>
+	<p>Don't worry about which folder of sound files, database, and
+		binary store are set in the configuration. These will all be
+		overwritten with new values for each job when it runs.</p>
+	<p>
+		<b>Remember to save the configuration when you've made
+			modification, or the changes may not get used when you come to
+			process new data</b>
+	</p>
+
+
+	<br>
+	<p CLASS="prevLink">
+		<a href="batchoverview.html">Previous: Batch Processor overview.</a>
+	</p>
+	<p CLASS="nextLink">
+		<a href="batchjobs.html">Next: Creating Batch Jobs.</a>
+	</p>
+	<br>
+	<br>
 </body>

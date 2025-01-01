@@ -1,8 +1,8 @@
 <html>
 
 <head>
-	<LINK href="../pamHelpStylesheet.css" type="text/css" rel="STYLESHEET">
-	<title>Batch Processing</title>
+<LINK href="../pamHelpStylesheet.css" type="text/css" rel="STYLESHEET">
+<title>Batch Processing</title>
 </head>
 
 <body>
@@ -11,28 +11,55 @@
 	<h2>Overview</h2>
 	<br>
 
-	<p>The Batch Processing module can be used to run the same configuration file on multiple datasets using the same psfx file
-	without having to go into the configuration for every dataset to change the location of the source files, the output
-	database name, and the location of the binary store. </p>
-	<p>It is particularly useful for processing datasets from deployments of multiple autonomous recorders, but also has application
-	in reprocessing of any data where you want to run the same PAMGuard algorithms on multiple sets of data.</p>
-	<p>Currently, it can only be used to process raw data files in 
-	<a href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">normal mode</a>. We are currently developing a 
-	version that can run <a href="_mainHelp_overview/overview/PamMasterHelp/docs/viewerMode.html">viewer mode tasks</a> on multiple datasets, such as
-        <a href="_mainHelp_detectors/clickDetectorHelp/docs/ClickDetector_clickClassification.html">reclassifying 
-        clicks</a>, or running the  
-        <a href="_mainHelp_detectors/ClickTrainDetector/docs/ClickTrainDetector.html">click train detector</a>.
-	
+	<p>The Batch Processing module can be used to run the same
+		configuration file on multiple datasets without having to go into the configuration for every dataset to
+		change the location of the source files, the output database name, and
+		the location of the binary store.</p>
+	<p>It is particularly useful for processing datasets from
+		deployments of multiple autonomous recorders, but also has application
+		in reprocessing of any data where you want to run the same PAMGuard
+		algorithms on multiple sets of data.</p>
+	<p>
+		The module can process raw data using <a
+			href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">Normal
+			Mode</a> to run detectors on folders of sound files (<a href="#normal">Figure 1</a>).
+	</p>
+	<p>
+		It can also be used to process data in <a
+			href="_mainHelp_overview/overview/PamMasterHelp/docs/viewerMode.html">Viewer
+			Mode</a> to perform tasks such as <a
+			href="_mainHelp_detectors/clickDetectorHelp/docs/ClickDetector_clickClassification.html">reclassifying
+			clicks</a>, or running the <a
+			href="_mainHelp_detectors/ClickTrainDetector/docs/ClickTrainDetector.html">click
+			train detector</a>
+	</p>
+	<a name="normal"><img src="images/normaldiagram.png" width="700">
+	<p>Figure 1. Normal mode processing of raw audio data</p></a>
+
+
+
 	<h3>Installation</h3>
-	<p>The batch processing module is a 
-	<a href="https://www.pamguard.org/pluginmodules.html">plugin module</a>, which needs to be added to your PAMGuard installation</p>
-	<p>If you're reading this in the PAMGUard online help, you've already installed the Batch Processing module.</p>
-	<p>Otherwise, you need to download the latest jar file (e.g. PamguardBatch_1.6.jar) by following links from the
-	PAMGuard plugins pages, then copy the jar file into your plugins folder (e.g. C:\Program Files\Pamguard\plugins) from where
-	PAMGuard will automatically add it to the list of available modules in the Utilities menu next time it starts.</p>
-	
+	<p>
+		The batch processing module is a <a
+			href="https://www.pamguard.org/pluginmodules.html">plugin module</a>,
+		which needs to be added to your PAMGuard installation
+	</p>
+	<p>If you're reading this in the PAMGUard online help, you've
+		already installed the Batch Processing module.</p>
+	<p>
+		Otherwise, you need to download the latest jar file using the links
+		from the <a href="https://www.pamguard.org/plugins/plugins.html">PAMGuard
+			plugins pages</a>, then copy the jar file into your plugins folder (e.g.
+		C:\Program Files\Pamguard\plugins) from where PAMGuard will
+		automatically add it to the list of available modules in the Utilities
+		menu next time you run PAMGuard.
+	</p>
+
 	<br>
-	<p CLASS="nextLink"><a href="batchconfiguration.html">Next: Configuring the batch processor.</a></p>
-	
-	
+	<p CLASS="nextLink">
+		<a href="batchconfiguration.html">Next: Configuring the batch
+			processor.</a>
+	</p>
+
+
 </body>
