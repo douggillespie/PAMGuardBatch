@@ -29,11 +29,13 @@ import PamController.command.BatchStatusCommand;
 import PamController.command.ExitCommand;
 import PamController.fileprocessing.ReprocessStoreChoice;
 import PamView.PamTabPanel;
+import PamView.dialog.warn.WarnOnce;
 import PamguardMVC.dataOffline.OfflineDataLoadInfo;
 import binaryFileStorage.BinaryStore;
 import generalDatabase.DBControl;
 import generalDatabase.DBControlUnit;
 import networkTransfer.send.NetworkSender;
+import offlineProcessing.OfflineTask;
 import offlineProcessing.OfflineTaskManager;
 import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
@@ -84,6 +86,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	private SettingsObservers settingsObservers = new SettingsObservers();
 	
 	private ExternalConfiguration externalConfiguration;
+
+	private PSFXMonitor psfxMonitor;
 		
 	/**
 	 * @return the batchProcess
@@ -329,7 +333,9 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	}
 
 	/**
-	 * open PAMGuard in a new program instance, 
+	 * open PAMGuard in a new program instance to view and modify the configuration.
+	 * If doing viewer stuff it opens in a slightly 'funny' mode to make sure that
+	 * viewer tasks are loaded. 
 	 * @param psfxFile psfx file
 	 * @param withComms with comms for external control. false for now, will probably eventually be a reference to a job set. 
 	 */
@@ -344,7 +350,9 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		command.addAll(pgExe);
 		command.add("-psf");
 		command.add(psfxFile);
-
+		if (batchParameters.getBatchMode() == BatchMode.VIEWER) {
+			command.add("-bv"); // batchview mode. Will load the psfx, but then pretend it's in viewer mode.  
+		}
 		File pFile = new File(psfxFile);
 		long pModified = 0;
 		try {
@@ -370,11 +378,28 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			e.printStackTrace();
 		}
 		// monitor the process and the psfx file, being prepared to update the internal config if the file changes. 
-		Thread t = new Thread(new PSFXMonitor(process, pFile, pModified));
+		Thread t = new Thread(psfxMonitor = new PSFXMonitor(process, pFile, pModified));
 		t.start();
 		
 	}
 	
+	/**
+	 * Try to work out whether or not the sample psfx is open, so might 
+	 * be about to rewrite the psfx file. 
+	 * @return true if it's been opened from within Batch Processor. Can't 
+	 * do much if it was opened independently. 
+	 */
+	private boolean isPSFXOpen() {
+		if (psfxMonitor == null) {
+			return false;
+		}
+		try {
+			return psfxMonitor.process.isAlive();
+		}
+		catch (Exception e) {
+			return false;
+		}
+	}
 	/**
 	 * Monitor the psfx file and update internal settings for the remote config if it
 	 * changes. This is particularly important with offline tasks, since their configuration
@@ -1073,5 +1098,40 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	public void extractDatabaseConfiguration(String databaseName) {
 		ViewerDatabase vdb = new ViewerDatabase(this, databaseName);
 		vdb.extractPSFX();
+	}
+
+	/**
+	 * Called from the task settings to handle updates to individual task settings
+	 * through task dialogs. This cannot be done if the psfx is already open since that
+	 * will override any changes as soon as it's saved. 
+	 * @param offlineTask
+	 */
+	public void taskSettings(OfflineTask offlineTask) {
+		if (offlineTask == null || offlineTask.hasSettings() == false) {
+			return; // nothing to be done anyway. 
+		}
+		PamControlledUnit parentModule = offlineTask.getParentControlledUnit();
+		if (parentModule == null) {
+			return;
+		}
+		boolean psfxOpen = isPSFXOpen();
+		if (psfxOpen) {
+			String msg = String.format("The configuration file %s is currently open.<br>" +
+		"Either make changes in the psfx file, or from the task table, but you can't do both." , batchParameters.getMasterPSFX());
+			WarnOnce.showWarning("Potential onfiguration change conflict", msg, WarnOnce.WARNING_MESSAGE);
+			return;
+		}
+		// see if the psfx is open in a process. 
+		boolean changed = offlineTask.callSettings();
+		if (changed) {
+			// will need to rewrite and reload the psfx file. Is this even safe to do with a half loaded
+			// configuration ? 
+			int changes = externalConfiguration.pullSettings(parentModule);
+			if (changes > 0) {
+				externalConfiguration.saveExtConfig();
+			}
+		}
+//	}
+		
 	}
 }

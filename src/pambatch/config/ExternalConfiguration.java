@@ -1,7 +1,9 @@
 package pambatch.config;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.ListIterator;
 
 import PamController.PSFXReadWriter;
 import PamController.PamConfiguration;
@@ -61,9 +63,32 @@ public class ExternalConfiguration implements SettingsObserver {
 		}
 
 		loadSettingsGroup(settingsGroup);
+		
+		
 
 		extractTasks();
 
+	}
+	
+	/**
+	 * Save settings back to the selected psfx file. 
+	 * @return true on success.
+	 */
+	public boolean saveExtConfig() {
+		return saveExtConfig(batchControl.getBatchParameters().getMasterPSFX());
+	}
+	
+	/**
+	 * Save the configuration settings back into the psfx. 
+	 * @param psfxName
+	 * @return true on success.
+	 */
+	public boolean saveExtConfig(String psfxName) {
+		if (settingsGroup == null) {
+			return false;
+		}
+		settingsGroup.setSettingsTime(System.currentTimeMillis());
+		return PSFXReadWriter.getInstance().writePSFX(psfxName, settingsGroup);
 	}
 	
 	/**
@@ -133,6 +158,8 @@ public class ExternalConfiguration implements SettingsObserver {
 			return;
 		}
 
+		extConfiguration.getSettingsOwners().clear();
+		PamSettingManager.getInstance().setSecondaryConfiguration(extConfiguration);
 
 		PamModel pamModel = PamController.getInstance().getModelInterface();
 		for (UsedModuleInfo unit : modulesList) {
@@ -150,27 +177,47 @@ public class ExternalConfiguration implements SettingsObserver {
 		}
 		
 		/**
+		 * Now have a list of settings owners as well as the actual settings, 
+		 * so should be able to push settings to every owner. 
+		 */
+		ArrayList<PamSettings> owners = extConfiguration.getSettingsOwners();
+		for (PamSettings owner : owners) {
+			//skip the main controller. 
+			if (owner.getClass() == PamController.class) {
+				continue;
+			}
+			PamControlledUnitSettings settings = settingsGroup.findUnitSettings(owner.getUnitType(), owner.getUnitName());
+			if (settings != null) {
+				owner.restoreSettings(settings);
+			}
+			else {
+				System.out.printf("Ext config can't find settings for %s : %s\n", owner.getUnitType(), owner.getUnitName());
+			}
+		}
+		/**
 		 * This will put main settings into PAMControlledUnits, but will NOT do anything else for
 		 * each module. This isn't great since many modules have multiple settings objects, which are
 		 * all controlled from the global settings list that they will have all registered with. In batch mode, where
 		 * we're trying to have multiple settings loaded in the same model, a lot of those settings will have gotten 
-		 * overwritten when the modle is loaded, which messed everything up big time. 
+		 * overwritten when the model is loaded, which messed everything up big time. 
 		 */
-		for (PamControlledUnit unit : extConfiguration.getPamControlledUnits()) {
-			if (unit instanceof PamSettings == false) {
-				continue;
-			}
-			PamSettings pamSettings = (PamSettings) unit;
-			PamControlledUnitSettings settings = settingsGroup.findUnitSettings(pamSettings.getUnitType(), pamSettings.getUnitName());
-			if (settings != null) {
-				pamSettings.restoreSettings(settings);
-			}
-			else {
-				System.out.println("No external settings for " + unit.getUnitName());
-			}
-		}
+//		for (PamControlledUnit unit : extConfiguration.getPamControlledUnits()) {
+//			if (unit instanceof PamSettings == false) {
+//				continue;
+//			}
+//			PamSettings pamSettings = (PamSettings) unit;
+//			PamControlledUnitSettings settings = settingsGroup.findUnitSettings(pamSettings.getUnitType(), pamSettings.getUnitName());
+//			if (settings != null) {
+//				pamSettings.restoreSettings(settings);
+//			}
+//			else {
+//				System.out.println("No external settings for " + unit.getUnitName());
+//			}
+//		}
 		
 		extConfiguration.notifyModelChanged(PamController.INITIALIZATION_COMPLETE);
+		
+		PamSettingManager.getInstance().setSecondaryConfiguration(null);
 	}
 
 
@@ -187,6 +234,40 @@ public class ExternalConfiguration implements SettingsObserver {
 	 */
 	public OfflineTaskDataBlock getTaskDataBlock() {
 		return taskDataBlock;
+	}
+
+	/**
+	 * Pull the settings pertinent to this module back out of the configuration and back into 
+	 * the settings list. 
+	 * @param parentModule
+	 */
+	public int pullSettings(PamControlledUnit parentModule) {
+		if (settingsGroup == null || parentModule == null) {
+			return -1;
+		}
+		String unitName = parentModule.getUnitName();
+		ArrayList<PamControlledUnitSettings> allSettings = settingsGroup.getUnitSettings();
+		ListIterator<PamControlledUnitSettings> it = allSettings.listIterator();
+		int changes = 0;
+		while (it.hasNext()) {
+			PamControlledUnitSettings aSet = it.next();
+			if (aSet.getUnitName().equals(unitName) == false) {
+				continue;
+			}
+			/*
+			 *  Can work now since the extConfiguration contains a list of owners. 
+			 */
+			PamSettings owner = extConfiguration.findSettingOwner(aSet.getUnitType(), aSet.getUnitName());
+			if (owner == null) {
+				System.out.printf("No owner to update settings for %s:%s\n", aSet.getUnitType(), aSet.getUnitName());
+				continue;
+			}
+			Serializable newSettings = owner.getSettingsReference();
+			// and update these in the settings
+			aSet.setSettings(newSettings);
+			changes++;
+		}
+		return changes;
 	}
 
 

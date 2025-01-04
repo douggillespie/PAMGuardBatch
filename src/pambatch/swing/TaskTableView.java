@@ -1,9 +1,13 @@
 package pambatch.swing;
 
+import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 
 import javax.swing.JButton;
+import javax.swing.JTable;
+import javax.swing.table.TableCellRenderer;
 
 import PamController.PamControlledUnit;
 import PamView.component.DataBlockTableView;
@@ -17,15 +21,22 @@ import pambatch.tasks.TaskSelection;
 
 public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 
-//	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select", "Configure"};
+	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select", "Settings"};
 	// remove configur eoption for now since it's too many settings versions. Use launch option for PAMGuard instead. 
-	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select"};
+//	private static final String[] columnNames = {"Module", "Name", "Input", "Output", "Select"};
 	private BatchControl batchControl;
+	private TableCellRenderer tableRenderer;
+	
+	private JButton[] rowButtons = new JButton[0];
 
 	public TaskTableView(BatchControl batchControl, PamDataBlock<OfflineTaskDataUnit> pamDataBlock, String displayName) {
 		super(pamDataBlock, displayName);
 		this.batchControl = batchControl;
 		getTable().addMouseListener(new MouseAction());
+		 
+		tableRenderer = getTable().getDefaultRenderer(JButton.class);
+		getTable().setDefaultRenderer(JButton.class, new JTableButtonRenderer(tableRenderer));
+	      
 		
 		showViewerScrollControls(false);
 	}
@@ -85,11 +96,24 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			return taskSelection.selected;
 		case 5:
 			if (task.hasSettings()) {
-				return "Configure";
+//				return "Configure";
+				return getRowButton(0);
 			}
 		}
 		
 		return null;
+	}
+	
+	class JTableButtonRenderer implements TableCellRenderer {
+		private TableCellRenderer defaultRenderer;
+		public JTableButtonRenderer(TableCellRenderer renderer) {
+			defaultRenderer = renderer;
+		}
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			if(value instanceof Component)
+				return (Component)value;
+			return defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+		}
 	}
 
 	@Override
@@ -116,10 +140,11 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			fireTableDataChanged();
 			break;
 		case 5:
-			System.out.println("Open settings for task " + dataUnit.getOfflineTask().getName());
-			if (dataUnit.getOfflineTask().hasSettings()) {
-				dataUnit.getOfflineTask().callSettings();
-			}
+//			System.out.println("Open settings for task " + dataUnit.getOfflineTask().getName());
+			batchControl.taskSettings(dataUnit.getOfflineTask());
+//			if (dataUnit.getOfflineTask().hasSettings()) {
+//				dataUnit.getOfflineTask().callSettings();
+//			}
 			break;
 		}
 		
@@ -130,8 +155,8 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		switch(columnIndex) {
 		case 4:
 			return Boolean.class;
-//		case 5:
-//			return JButton.class;
+		case 5:
+			return JButton.class;
 		}
 		return null;
 	}
@@ -140,6 +165,21 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 	public void popupMenuAction(MouseEvent e, OfflineTaskDataUnit dataUnit, String colName) {
 		// TODO Auto-generated method stub
 		super.popupMenuAction(e, dataUnit, colName);
+	}
+	
+	private JButton getRowButton(int row) {
+		// overkill. Don't actually need a button per row and the buttons don't 
+		// need an action listener since the response if off the clcik on the table row, not the button itself, 
+		// so use a single button and it's purely cosmetic. 
+		if (row >= rowButtons.length) {
+			rowButtons = Arrays.copyOf(rowButtons, row+1);
+			for (int i = 0; i < rowButtons.length; i++) {
+				if (rowButtons[i] == null) {
+					rowButtons[i] = new JButton("Configure Task");
+				}
+			}
+		}
+		return rowButtons[row];
 	}
 
 }
