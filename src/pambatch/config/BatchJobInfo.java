@@ -2,6 +2,7 @@ package pambatch.config;
 
 import java.io.Serializable;
 
+import Array.PamArray;
 import pambatch.BatchJobStatus;
 
 /**
@@ -27,6 +28,11 @@ public class BatchJobInfo implements Serializable, Cloneable {
 	 * Output database
 	 */
 	public String outputDatabaseName;
+	
+	/*
+	 * A start command has been sent (time of)
+	 */
+	public long startSent = 0;
 
 	/**
 	 * Job status
@@ -39,6 +45,8 @@ public class BatchJobInfo implements Serializable, Cloneable {
 	public double percentDone;
 
 	private int jobId2;
+	
+	public PamArray arrayData;
 	
 	
 	public BatchJobInfo() {

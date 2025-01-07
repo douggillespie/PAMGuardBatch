@@ -7,7 +7,7 @@ import Acquisition.FolderInputParameters;
 import binaryFileStorage.BinaryStoreSettings;
 import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
-import pambatch.ctrl.ViewerDatabase;
+import pambatch.config.ViewerDatabase;
 
 /**
  * Dialog for creating an offline job. This will be a bit different to 

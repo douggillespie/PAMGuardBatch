@@ -13,6 +13,7 @@ import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.config.BatchJobInfo;
 import pambatch.config.ExternalConfiguration;
+import pambatch.config.ViewerDatabase;
 import pambatch.remote.RemoteAgentDataUnit;
 import pambatch.tasks.OfflineTaskDataBlock;
 import pambatch.tasks.OfflineTaskDataUnit;

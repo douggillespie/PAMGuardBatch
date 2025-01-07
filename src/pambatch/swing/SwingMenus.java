@@ -65,6 +65,33 @@ public class SwingMenus {
 			});
 			menuItem.setToolTipText("Extract configuration from database and use as master PSFX");
 		}
+		if (batchMode == BatchMode.NORMAL) {
+			boolean haveCal = jobInfo.arrayData != null;
+			if (haveCal == false) {
+				menuItem = new JMenuItem("Add job specific calibration / array data");
+			}
+			else {
+				menuItem = new JMenuItem("Edit job specific calibration / array data");
+			}
+			menuItem.addActionListener(new ActionListener() {
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.editJobCalibration(dataUnit);
+				}
+			});
+			popMenu.add(menuItem);
+			menuItem = new JMenuItem("Delete job specific calibration / array data");
+			menuItem.setEnabled(haveCal);
+			menuItem.addActionListener(new ActionListener() {
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.deleteJobCalibration(dataUnit);
+				}
+			});
+			popMenu.add(menuItem);
+		}
 //		JobController jobController = dataUnit.getJobController();
 //		if (jobController != null) {
 //			menuItem = new JMenuItem("Stop / Kill job");

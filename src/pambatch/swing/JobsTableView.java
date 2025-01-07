@@ -19,16 +19,17 @@ import pambatch.config.SettingsObserver;
 public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements SettingsObserver {
 	
 
-	private String[]  colNames = {"Id", "Source", "Binary", "Database", "Status", "Updated"};
+	private String[]  colNames = {"Id", "Source", "Binary", "Database", "Calibration",  "Status", "Updated"};
 	
 	// changed column order for viewer mode. 
-	private int[] viewerOrder = {0, 3, 2, 1, 4, 5};
+	private int[] viewerOrder = {0, 3, 2, 1, 5, 6};
+	private int[] normalOrder = {0, 1, 2, 3, 4, 5, 6};
 	
 	private String[] viewerColumns;
 	
 	private String[] tips = {"Job Id: the same as the index in the jobs database table",
 			"Source of input recordings to process", "Output file destination for binary data",
-			"Output database", "Job Status", "Last update time"};
+			"Output database", "Job specific calibration / array data", "Job Status", "Last update time"};
 
 	private BatchControl batchControl;
 
@@ -123,6 +124,8 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 			}
 			break;
 		case 4:
+			return jobInfo.arrayData == null ? "Default" : "Provided";
+		case 5:
 			BatchDataUnit conflict = dataUnit.getConflictingJob();
 			if (conflict != null) {
 				return "Conflict with job id " + conflict.getDatabaseIndex();
@@ -135,7 +138,7 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 				return str;
 			}
 			break;
-		case 5: // last update time
+		case 6: // last update time
 			long interval = System.currentTimeMillis()-dataUnit.getLastChangeTime();
 			if (interval < 10000) {
 				return "Just now";

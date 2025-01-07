@@ -1,4 +1,4 @@
-package pambatch.ctrl;
+package pambatch.config;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,8 +22,6 @@ import generalDatabase.DBSettingsStore;
 import generalDatabase.LogSettings;
 import generalDatabase.PamConnection;
 import pambatch.BatchControl;
-import pambatch.config.BatchJobInfo;
-import pambatch.config.SettingsObservers;
 
 /**
  * Some functions for viewer databases to extract latest configuration, 

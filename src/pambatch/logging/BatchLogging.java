@@ -2,6 +2,10 @@ package pambatch.logging;
 
 import java.sql.Types;
 
+import Array.ArrayManager;
+import Array.PamArray;
+import PamController.PamControlledUnitSettings;
+import PamView.PamControlledGUISwing;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import generalDatabase.EmptyTableDefinition;
@@ -18,7 +22,7 @@ public class BatchLogging extends SQLLogging {
 
 	private BatchControl batchControl;
 	
-	private PamTableItem  updateTime, sourceFolder, binaryFolder, databaseName, percent, status;
+	private PamTableItem  updateTime, sourceFolder, binaryFolder, databaseName, array, percent, status;
 	
 	private PamTableDefinition tableDefinition;
 
@@ -31,6 +35,7 @@ public class BatchLogging extends SQLLogging {
 		tableDefinition.addTableItem(sourceFolder = new PamTableItem("Source", Types.VARCHAR));
 		tableDefinition.addTableItem(binaryFolder = new PamTableItem("Binary", Types.VARCHAR));
 		tableDefinition.addTableItem(databaseName = new PamTableItem("Database", Types.VARCHAR));
+		tableDefinition.addTableItem(array = new PamTableItem("ArrayData", Types.BLOB));
 		tableDefinition.addTableItem(percent = new PamTableItem("Percent", Types.REAL));
 		tableDefinition.addTableItem(status = new PamTableItem("Status", Types.CHAR, 50));
 		
@@ -49,6 +54,7 @@ public class BatchLogging extends SQLLogging {
 			binaryFolder.setValue(null);
 			databaseName.setValue(null);
 			status.setValue(null);
+			array.setValue(null);
 		}
 		else {
 			sourceFolder.setValue(jobInfo.soundFileFolder);
@@ -60,6 +66,15 @@ public class BatchLogging extends SQLLogging {
 			}
 			else {
 				status.setValue(jobInfo.jobStatus.toString());
+			}
+			PamArray arrayData = jobInfo.arrayData;
+			if (arrayData == null) {
+				array.setValue(null);
+			}
+			else { // serialise the data into a byte array and store. 
+				PamControlledUnitSettings set = new PamControlledUnitSettings(ArrayManager.arrayManagerType, ArrayManager.arrayManagerType, 
+						ArrayManager.class.getName(), arrayData.serialVersionUID, arrayData);
+				array.setValue(set.getNamedSerialisedByteArray());
 			}
 		}
 	}
@@ -74,6 +89,18 @@ public class BatchLogging extends SQLLogging {
 		jobInfo.percentDone = percentDone;
 		String statusStr = status.getDeblankedStringValue();
 		jobInfo.jobStatus = BatchJobStatus.getValue(statusStr);
+		Object serArray = array.getValue();
+		if (serArray instanceof byte[]) {
+			Object settings = PamControlledUnitSettings.createFromNamedByteArray((byte[]) serArray);
+			if (settings instanceof PamControlledUnitSettings) {
+				Object arrayData = ((PamControlledUnitSettings) settings).getSettings();
+				if (arrayData instanceof PamArray) {
+					jobInfo.arrayData = (PamArray) arrayData;
+				}
+			}
+		}
+		
+		
 		BatchDataUnit dataUnit = new BatchDataUnit(timeMilliseconds, jobInfo);
 		
 		return dataUnit;

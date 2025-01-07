@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 import pambatch.BatchControl;
 import pambatch.config.BatchCommand;
@@ -14,13 +15,13 @@ import pambatch.config.BatchParameters;
 public class BatchMulticastController {
 
 	private BatchControl batchControl;
-		
+
 	private DatagramSocket datagramSocket;
 
 	private InetAddress mcIPAddress;
-	
+
 	private Thread rxThread;
-	
+
 	private volatile boolean continueRX;
 
 	public BatchMulticastController(BatchControl batchControl) {
@@ -28,17 +29,19 @@ public class BatchMulticastController {
 		this.batchControl = batchControl;
 		getSocket(); // should initialise the receive thread. 
 	}
-	
+
 	public boolean sendCommand(String command) {
-		
+		return sendCommand(command.getBytes());
+	}
+	
+	public boolean sendCommand(byte[] data) {
+
 		BatchParameters params = batchControl.getBatchParameters();
-		
 		DatagramSocket udpSocket = getSocket();
 		if (udpSocket == null) {
 			return false;
 		}
-		
-		DatagramPacket packet = new DatagramPacket(command.getBytes(), command.length());;
+		DatagramPacket packet = new DatagramPacket(data, data.length);
 		packet.setAddress(mcIPAddress);
 		packet.setPort(params.getMulticastPort());
 		try {
@@ -49,7 +52,7 @@ public class BatchMulticastController {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Send a batch command targeted at a specific PAMGuard. These are all sent
 	 * with a command "batchcommand" and will be recievied on multicast by all 
@@ -59,8 +62,29 @@ public class BatchMulticastController {
 	 * @param commandid
 	 */
 	public void targetCommand(int id1, int id2, String commandid) {
-		String commandStr = String.format("%s %d %d %s", PamController.command.BatchCommand.commandId, id1,id2,commandid);
+		String commandStr = formatBatchCommand(id1, id2, commandid);
 		sendCommand(commandStr);
+	}
+	
+	public String formatBatchCommand(int id1, int id2, String commandid) {
+		String commandStr = String.format("%s %d %d %s", PamController.command.BatchCommand.commandId, id1,id2,commandid);
+		return commandStr;
+	}
+	
+	public byte[] createBinaryCommand(int id1, int id2, String command, byte[] data) {
+		String commandStr = String.format("%s %d %d:::", PamController.command.BatchCommand.commandId, id1,id2);
+		byte[] cmdDat = commandStr.getBytes();
+		// and add the data to the end of that. 
+		byte[] fullDat = Arrays.copyOf(cmdDat, cmdDat.length+data.length);
+		for (int i = 0, j = cmdDat.length; i < data.length; i++, j++) {
+			fullDat[j] = data[i];
+		}
+		return fullDat;
+	}
+	
+	public void targetCommand(int id1, int id2, String command, byte[] data) {
+		byte[] fullDat = createBinaryCommand(id1, id2, command, data);
+		sendCommand(fullDat);
 	}
 
 	/**
@@ -143,9 +167,9 @@ public class BatchMulticastController {
 			System.out.println("Multicastcontroller recieved null data");
 		}
 		String str = new String(data);
-//		System.out.println("Multicast controller recieved " + str);
+		//		System.out.println("Multicast controller recieved " + str);
 		batchControl.newStatusPacket(packet);
-		
+
 	}
 
 	/**
@@ -161,9 +185,9 @@ public class BatchMulticastController {
 				rxThread.join();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
-//				e.printStackTrace();
+				//				e.printStackTrace();
 			}
 		}
 	}
-	
+
 }

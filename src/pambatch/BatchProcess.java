@@ -67,7 +67,7 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		}
 		checkForCrashes();
 		// response will be asynchronous, so don't wait for anything. 
-		//		System.out.println("Sending Batch job multicast command: " + BatchStatusCommand.commandId);
+//		System.out.println("Sending Batch job multicast command: " + BatchStatusCommand.commandId);
 		mcController.sendCommand(BatchStatusCommand.commandId);
 	}
 

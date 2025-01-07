@@ -27,7 +27,7 @@ import generalDatabase.DBControl;
 import generalDatabase.DBControlUnit;
 import pambatch.BatchControl;
 import pambatch.config.BatchJobInfo;
-import pambatch.ctrl.ViewerDatabase;
+import pambatch.config.ViewerDatabase;
 
 public class ViewerSetDialog extends BatchSetDialog {
 

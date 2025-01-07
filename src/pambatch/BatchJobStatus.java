@@ -2,7 +2,7 @@ package pambatch;
 
 public enum BatchJobStatus {
 	
-	NOTSTARTED, RUNNING, COMPLETE, UNKNOWN, CANCELLED, STARTING;
+	NOTSTARTED, READY, RUNNING, COMPLETE, UNKNOWN, CANCELLED, STARTING;
 
 	@Override
 	public String toString() {
@@ -11,6 +11,8 @@ public enum BatchJobStatus {
 			return "Complete";
 		case NOTSTARTED:
 			return "Not Started";
+		case READY:
+			return "Ready";
 		case RUNNING:
 			return "Running";
 		case CANCELLED:

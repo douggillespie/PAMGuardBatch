@@ -17,17 +17,32 @@ import java.util.Random;
 
 import javax.swing.JPopupMenu;
 
+import org.w3c.dom.Document;
+
 import Acquisition.FolderInputSystem;
 import Acquisition.pamAudio.PamAudioFileFilter;
+import Array.ArrayDialog;
+import Array.ArrayManager;
+import Array.ArrayParameters;
+import Array.PamArray;
+import PamController.PSFXReadWriter;
 import PamController.PamControlledUnit;
 import PamController.PamControlledUnitSettings;
 import PamController.PamController;
 import PamController.PamGUIManager;
 import PamController.PamSettingManager;
 import PamController.PamSettings;
+import PamController.PamSettingsGroup;
+import PamController.command.BatchCommand;
 import PamController.command.BatchStatusCommand;
+import PamController.command.CommandManager;
 import PamController.command.ExitCommand;
+import PamController.command.SetSerializedSettingsCommand;
+import PamController.command.SetXMLSettings;
+import PamController.command.StartCommand;
+import PamController.command.TerminalController;
 import PamController.fileprocessing.ReprocessStoreChoice;
+import PamController.settings.output.xml.PamguardXMLWriter;
 import PamView.PamTabPanel;
 import PamView.dialog.warn.WarnOnce;
 import PamguardMVC.dataOffline.OfflineDataLoadInfo;
@@ -43,9 +58,9 @@ import pambatch.config.BatchMode;
 import pambatch.config.BatchParameters;
 import pambatch.config.ExternalConfiguration;
 import pambatch.config.SettingsObservers;
+import pambatch.config.ViewerDatabase;
 import pambatch.ctrl.BatchState;
 import pambatch.ctrl.BatchStateObserver;
-import pambatch.ctrl.ViewerDatabase;
 import pambatch.remote.RemoteAgentHandler;
 import pambatch.swing.NormalSetDialog;
 import pambatch.swing.BatchTabPanel;
@@ -561,6 +576,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 */
 	public ArrayList<String> getNormalJobLaunchParams(BatchDataUnit nextJob) {
 		
+		String psf = makeJobPSFX(nextJob);
+		
 		BatchJobInfo jobInfo = nextJob.getBatchJobInfo();
 		List<String> pgExe = findStartExecutable();
 		if (pgExe == null) {
@@ -570,7 +587,6 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 //		command.add(pgExe);
 		command.add(GlobalArguments.BATCHFLAG);
 		command.add("-psf");
-		String psf = batchParameters.getMasterPSFX();
 		if (psf == null) {
 			return null;
 		}
@@ -608,6 +624,40 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		jobInfo.setJobId2(jobId2);
 		
 		return command;
+	}
+	
+	/**
+	 * Make a job specific psfx. This will just be a copy of the current
+	 * master unless the array is being changed, in which case that at least
+	 * will be updated. 
+	 * @param nextJob
+	 */
+	private String makeJobPSFX(BatchDataUnit nextJob) {
+		String jobPSFX = getJobPSFXFileName(nextJob);
+		PamSettingsGroup settings = externalConfiguration.updateJobSettings(nextJob);
+		PSFXReadWriter.getInstance().writePSFX(jobPSFX, settings);
+		return jobPSFX;
+	}
+
+	/**
+	 * Get a name for what will be a temporary psfx file that will get modified configuration
+	 * settings for the launch of each job. This is easier than trying to change settings once the
+	 * job is launched. 
+	 * @param batchData
+	 * @return modified job specific name. 
+	 */
+	private String getJobPSFXFileName(BatchDataUnit batchData) {
+		String psfx = batchParameters.getMasterPSFX();
+		if (psfx == null) {
+			return null;
+		}
+		String lPSFX = psfx.toLowerCase();
+		int endDot = lPSFX.lastIndexOf(".psfx");
+		if (endDot > 0) {
+			psfx = psfx.substring(0, endDot);
+		}
+		psfx = psfx + String.format("_Job%d", batchData.getDatabaseIndex()) + ".psfx";
+		return psfx;
 	}
 	
 	/**
@@ -977,8 +1027,9 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 * @param data
 	 */
 	private void updateJobStatus(BatchDataUnit jobData, String data) {
-		System.out.println(data);
+//		System.out.println(data);
 		String[] commandBits = data.split(",");
+		BatchJobInfo jobInfo = jobData.getBatchJobInfo();
 		if (commandBits[0].trim().equals(BatchStatusCommand.commandId)) {
 			int nFiles = -1;
 			int iFile = 0;
@@ -994,21 +1045,35 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			}
 			catch (NumberFormatException e) {
 			}
-			boolean complete = iFile >= nFiles;
+			double percent = 0;
+			boolean complete = iFile >= nFiles && nFiles > 0;
 			BatchJobStatus jobStatus = BatchJobStatus.UNKNOWN;
-			if (iFile == 0) {
-				jobStatus = BatchJobStatus.NOTSTARTED;
+			if (status == PamController.PAM_INITIALISING) {
+				jobStatus = BatchJobStatus.STARTING;
+				percent = 0;
 			}
-			if (iFile >= nFiles && status == PamController.PAM_IDLE) {
+//			else if (jobInfo.startSent == 0) {
+////				startProcessing(jobData);
+//				jobStatus = BatchJobStatus.RUNNING;
+//				percent = 0;
+//			}
+			else if (iFile == 0) {
+				jobStatus = BatchJobStatus.STARTING;
+				percent = 0;
+			}
+			else if (iFile >= nFiles && status == PamController.PAM_IDLE) {
 				jobStatus = BatchJobStatus.COMPLETE;
+				percent = iFile * 100. / nFiles;
 				closeJob(jobData);
 			}
 			else {
 				jobStatus = BatchJobStatus.RUNNING;
+				percent = iFile * 100. / nFiles;
 			}
-			double percent = iFile * 100. / nFiles;
+//			System.out.printf("Set batch status job %d status %d file %d of %d to %s\n", 
+//					jobData.getDatabaseIndex(), status,
+//					iFile, nFiles, jobStatus.toString());
 			percent = Math.min(percent, 100);
-			BatchJobInfo jobInfo = jobData.getBatchJobInfo();
 			jobInfo.jobStatus = jobStatus;
 			jobInfo.percentDone = percent;
 			batchProcess.updateJobStatus(jobData);
@@ -1024,6 +1089,51 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		BatchJobInfo jobInfo = jobData.getBatchJobInfo();
 		multicastController.targetCommand(jobData.getDatabaseIndex(), jobInfo.getJobId2(), ExitCommand.commandId);
 	}
+	
+	/**
+	 * Called once a job is set up, i.e. PAMGuard has launched, but not started. Will send a start. 
+	 * @param jobData
+	 */
+//	private void startProcessing(BatchDataUnit jobData) {
+//		BatchJobInfo jobInfo = jobData.getBatchJobInfo();
+//		// do some final setup. 
+//		if (jobInfo.arrayData != null && 2<1) {
+//			// get as an xml string
+//			ArrayList<PamSettings> sl = new ArrayList<>();
+//			PamControlledUnitSettings ps = new PamControlledUnitSettings(ArrayManager.arrayManagerType, ArrayManager.arrayManagerType, 
+//					ArrayParameters.class.getName(), ArrayParameters.serialVersionUID, jobInfo.arrayData);
+////			byte[] binData = ps.getNamedSerialisedByteArray();
+////			byte[] cmdData = multicastController.createBinaryCommand(jobData.getDatabaseIndex(), jobInfo.getJobId2(), SetSerializedSettingsCommand.commandId, binData);
+////			// if I try to turn that into a string ? 
+////			String asStr = new String(cmdData);
+////			String cmd = SetSerializedSettingsCommand.commandId + " " + new String(binData);
+////			SetSerializedSettingsCommand ss = new SetSerializedSettingsCommand();
+////			ss.executeBinary(cmdData);
+//			PamguardXMLWriter xmlWriter = PamguardXMLWriter.getXMLWriter();
+////			
+//			Document sampDoc = xmlWriter.writeOneModule(ArrayManager.getArrayManager(), System.currentTimeMillis());
+//			String sTxt = xmlWriter.getAsString(sampDoc);
+//			System.out.println("Sample: " + sTxt);
+//			
+//			Document doc = xmlWriter.writeSettings(ps);			
+//			String txt = xmlWriter.getAsString(doc);
+//			System.out.println("Setting array data: " + txt);
+//			String cmd = "setxmlsettings " + txt;
+//			
+//			String sentCmd = multicastController.formatBatchCommand(jobData.getDatabaseIndex(), jobInfo.getJobId2(), cmd);
+//			TerminalController tc;
+//			BatchCommand bc = new BatchCommand(tc = new TerminalController(PamController.getInstance()));
+//			tc.interpretCommand(sentCmd);
+//			
+//			SetXMLSettings ss = new SetXMLSettings();
+//			ss.execute(cmd);
+//			multicastController.targetCommand(jobData.getDatabaseIndex(), jobInfo.getJobId2(), cmd);
+//		}
+//		
+//		
+//		multicastController.targetCommand(jobData.getDatabaseIndex(), jobInfo.getJobId2(), StartCommand.commandId);
+//		jobInfo.startSent = System.currentTimeMillis();
+//	}
 
 	/**
 	 * Stop and cancel a running job. 
@@ -1133,5 +1243,34 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		}
 //	}
 		
+	}
+
+	public void editJobCalibration(BatchDataUnit dataUnit) {
+		PamArray array = dataUnit.getBatchJobInfo().arrayData;
+		if (array == null) {
+			if (externalConfiguration == null) {
+				return;
+			}
+			array = externalConfiguration.findArrayData();
+		}
+		if (array == null) { // this should be impossible
+			array = ArrayManager.getArrayManager().getCurrentArray();
+		}
+		if (array == null) { // this should definitely be impossible
+			return;
+		}
+		// use the array dialog to make edits. 
+		array = ArrayDialog.showDialog(getGuiFrame(), null, array);
+		if (array != null) {
+			dataUnit.getBatchJobInfo().arrayData = array;
+			batchProcess.getBatchDataBlock().updatePamData(dataUnit, System.currentTimeMillis());
+			batchProcess.updateJobStatus(dataUnit);
+		}
+	}
+
+	public void deleteJobCalibration(BatchDataUnit dataUnit) {
+		dataUnit.getBatchJobInfo().arrayData = null;
+		batchProcess.getBatchDataBlock().updatePamData(dataUnit, System.currentTimeMillis());
+		batchProcess.updateJobStatus(dataUnit);
 	}
 }

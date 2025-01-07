@@ -3,8 +3,12 @@ package pambatch.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ListIterator;
 
+import Array.ArrayManager;
+import Array.ArrayParameters;
+import Array.PamArray;
 import PamController.PSFXReadWriter;
 import PamController.PamConfiguration;
 import PamController.PamControlledUnit;
@@ -19,6 +23,7 @@ import PamModel.PamModuleInfo;
 import offlineProcessing.OfflineTask;
 import offlineProcessing.OfflineTaskManager;
 import pambatch.BatchControl;
+import pambatch.BatchDataUnit;
 import pambatch.tasks.OfflineTaskDataBlock;
 import pambatch.tasks.OfflineTaskDataUnit;
 
@@ -270,7 +275,64 @@ public class ExternalConfiguration implements SettingsObserver {
 		return changes;
 	}
 
+	/**
+	 * Find settings with a specific type and name within the external config
+	 * @param unitType
+	 * @param unitName
+	 * @return
+	 */
+	public Object findSettings(String unitType, String unitName) {
+		if (settingsGroup == null) {
+			return null;
+		}
+		PamControlledUnitSettings sg = settingsGroup.findUnitSettings(unitType, unitName);
+		if (sg == null) {
+			return null;
+		}
+		return sg.getSettings();
+	}
 
+	public PamArray findArrayData() {
+		Object arrayObj = findSettings(ArrayManager.arrayManagerType, ArrayManager.arrayManagerType);
+		if (arrayObj == null) {
+			return null;
+		}
+		ArrayList<PamArray> arrayArray;
+		//		PamArray array = ArrayManager.getArrayManager().unpackArrayObject(arrayObj);
+		if (arrayObj instanceof ArrayParameters) {
+			arrayArray = ((ArrayParameters) arrayObj).getArrayList();
+		}
+		else {
+			arrayArray =  (ArrayList<PamArray>) arrayObj;
+		}
+		if (arrayArray.size() == 0) {
+			return null;
+		}
+		try {
+			return (PamArray) arrayArray.get(0);
+		}
+		catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Update the array data in the external settings. 
+	 * @param nextJob
+	 */
+	public PamSettingsGroup updateJobSettings(BatchDataUnit nextJob) {
+		PamSettingsGroup sg = getSettingsGroup(true);
+		BatchJobInfo jobInfo = nextJob.getBatchJobInfo();
+		if (jobInfo.arrayData == null) {
+			return sg;
+		}
+		PamControlledUnitSettings ps = sg.findUnitSettings(ArrayManager.arrayManagerType, ArrayManager.arrayManagerType);
+		ArrayParameters ap = (ArrayParameters) ps.getSettings();
+		ArrayList<PamArray> arrays = ap.getArrayList();
+		arrays.clear();
+		arrays.add(jobInfo.arrayData);
+		return sg;
+	}
 
 
 }

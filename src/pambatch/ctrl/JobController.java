@@ -49,7 +49,7 @@ public abstract class JobController {
 		BatchMode mode = batchControl.getBatchParameters().getBatchMode();
 		if (remoteAgent.isLocalMachine()) {
 			if (mode == BatchMode.NORMAL) {
-			jobController = new LocalJobController(batchControl, remoteAgent, batchDataUnit, jobMonitor);
+				jobController = new LocalJobController(batchControl, remoteAgent, batchDataUnit, jobMonitor);
 			}
 			else {
 				jobController = new OfflineJobController(batchControl, remoteAgent, batchDataUnit, jobMonitor);
