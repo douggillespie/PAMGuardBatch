@@ -14,8 +14,8 @@
 		Whether you are planning to run jobs in <a
 			href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">Normal
 			Mode</a> to process raw data, or whether you plan to use <a
-			href="_mainHelp_overview/overview/PamMasterHelp/docs/viewerMode.html">Viewer
-			Mode</a> to run tasks on processed data, the Batch Processor module
+			href="_mainHelp_overview/PamMasterHelp/docs/viewerMode.html">Viewer
+			Mode</a> to <a href="batchconfiguration_v.html">run tasks on processed data</a>, the Batch Processor module
 		always runs in <a
 			href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">Normal
 			Mode</a>.
@@ -24,12 +24,12 @@
 		To configure the batch processor, start PAMGuard in <a
 			href="_mainHelp_overview/PamMasterHelp/docs/normalMode.html">normal
 			mode</a> with a new / blank configuration and add two modules: a <a
-			href="_mainHelp_utilities/generalDatabaseHelp/docsdatabase_database.html">database</a>
+			href="_mainHelp_utilities/generalDatabaseHelp/docs/database_database.html">database</a>
 		and the batch processor module.
 	</p>
 	<p>
 		No other modules should be added to the configuration, except perhaps
-		a <a href="_mainHelp_utilities/userInputHelp/docs/userinput.html">User
+		a <a href="_mainHelp_utilities/userInputHelp/docs/userInput.html">User
 			Input</a> module which would allow you to make notes about what you've
 		been doing with the batch processor.
 	</p>
@@ -41,11 +41,8 @@
 	<br>
 	<br>
 	<h3>Select Operation Mode</h3>
-	<p>In the top left "Job Control" panel select either "Raw data
-		processing (normal mode)" or "Offline tasks (viewer mode)" from the
-		drop-down menu. When you change this selection you'll notice that the
-		display panels below change slightly reflecting the different
-		available options for each operation mode.</p>
+	<p>In the top left "Job Control" panel select  "Raw data
+		processing (normal mode)".</p>
 
 
 	<h3>Detector Configuration</h3>
@@ -58,7 +55,7 @@
 		that you are already happy with, and have tested on some of the data,
 		and select that configuration using the Browse button, however, you
 		can also use the Browse button to create an empty configuration to
-		work with andn then add the modules you require.</p>
+		work with and then add the modules you require.</p>
 	<p>To view or modify the configuration, press "Launch
 		Configuration". This will open the configuration in a separate
 		PAMGuard window where you can view and modify any of the sound
@@ -72,113 +69,19 @@
 			process new data</b>
 	</p>
 
-	<h3>Viewer Task Configuration</h3>
-	<p>Configuring offline tasks, such as re-running click
-		classification, for Viewer mode is a bit more complicated than for the
-		normal mode data processing. This is because each Viewer database
-		already contains a copy of the configuration and the multiple
-		databases and accompanying binary data may all have different
-		configurations.</p>
-	<p>To address this, as with the normal mode processing, you'll use
-		a psfx file to hold a master configuration for the tasks you want to
-		run. As each task runs, the batch processor will check the
-		configuration in the dataset about to be processed and will do its
-		best to ensure that the configuration for the dataset is compatible
-		with the task to run:</p>
-	<ol>
-		<li>If the PAMGuard module required for the task is not present,
-			the module will be added to the datasets configuration.</li>
-		<li>The configuration settings for that module will all be copied
-			over from the psfx configuration irrespective of whether the module
-			was already present, or if it was just added.</li>
-	</ol>
-	<p>If the configurations differ considerably, there is no guarantee
-		that the offline tasks will run correctly. For example if you were
-		starting with two similar configurations, both of which had a click
-		detector, but one was called "Click Detector" and the other
-		configuration had called it "HF Click Detector" you'll not be able to
-		use the same batch job configuration.</p>
-
-	<h4>Extracting an existing Viewer configuration into a psfx file</h4>
-	<p>It's possible that you have some PAMGuard datasets, each
-		consisting of a database and a folder of binary data, but no longer
-		have the psfx file used to generate those datasets. There are three
-		ways in which you can quite easily recreate the psfx file to use with
-		the batch processor:</p>
-	<ol>
-		<li>Look in the folders of binary data. Each time PAMGuard starts
-			it copies the psfx configuration into the first binary folder it
-			generates. So the binary folders should contain an exact copy of the
-			configuration used to generate that dataset.</li>
-		<li>Open one of your datasets in Viewer Mode, then from the file
-			menu select the option <em>Export Configuration ...</em> and save the
-			configuration somewhere on your system.
-		</li>
-		<li>Generate your list of jobs you're going to run the tasks on,
-			right click on any of the jobs in the "Job Detail table" and select
-			the menu item <em>Extract Configuration from database ...</em> which
-			will allow you to save the configuration in psfx format.
-		</li>
-	</ol>
-
-	<h4>Adding new modules</h4>
-	<p>
-		Offline tasks can have entirely new modules added and will process
-		their offline tasks so long as the module would not normally work on
-		raw input data. For instance, if you added a new <a
-			href="_mainHelp_detectors/clickDetectorHelp/docs/ClickDetector_clickDetector.html">Click
-			Detector</a> at this stage, nothing will happen because the click
-		detector expects to process raw data. Your could however add a <a
-			href="_mainHelp_detectors/ClickTrainDetector/docs/ClickTrainDetector.html">Click
-			Train Detector</a> to an existing configuration and it will search
-		existing click detector output for click trains. Next time you open
-		the datasets you processed with the additional detector you'll find
-		it's added to the configuration and that the database has tables of
-		detected click trains.
-	</p>
-
-	<h4>Tasks list</h4>
-	<p>A list of available tasks will automatically be extracted from
-		the master psfx file and displayed in the Offline tasks table in the
-		lower half of the display. The list will reflect tasks available in
-		the configuration you're working with. In this example the
-		configuration has two click detectors, each of which has four standard
-		tasks (click classification, echo detection, delay calculation, and
-		bearing calculation). A <a href="_mainHelp_detectors/ClickTrainDetector/docs/ClickTrainDetector.html">Click Train Detector</a> module, which has two
-		offline tasks for detection and classification, is connected to the
-		output of the Minke Pulse Detector and an 
-		<a href="_mainHelp_utilities/Alarms/docs/Alarms_Overview.html">Alarm module</a> to the output
-		of the SoundTrap Click Detector. The task panel therefore contains a
-		total of 11 different tasks.</p>
-
-	<img src="images/tasktable.png" width="900">
-
-	<p>For each task, the table shows the PAMGuard module running the
-		tasks, the name of the task, the input to the task and which data are
-		modified by the task. There is also a column where you select which
-		tasks you want to run (it probably won't be all of them) and a button
-		for editing settings if they are available.</p>
-
-	<h4>Changing task settings</h4>
-	<p>There are two ways of changing the task settings.
-	<p>
-	<ol>
-		<li>Open the psfx file from the Configuration panel and change
-			the settings there. Again <b> remember to save the configuration
-				or the changes will not get used.</b>
-		</li>
-		<li>On the Offline tasks table, click on the button to the right
-			of each task "Configure Task" and the settings for that task should
-			show in a popup dialog. Once the dialog is closed, the settings will
-			be applied to all jobs (apart from any already running).</li>
-	</ol>
+	<h3>Calibration Data</h3>
+	<p>Even if you've deployed near identical instruments, you may have slightly different
+	calibration data for each one, or perhaps hydrophone spacing changed slightly in 
+	towed arrays used in different years. Once you've <a href="batchjobs.html">added jobs</a> you
+	can <a href="batchjobs.html#calibration">set calibration data</a>  individually for each dataset. Changes to the hydrophones are the only
+	differences you'll be able to make between the configuration running on each of your datasets. </p> 
 
 	<br>
 	<p CLASS="prevLink">
 		<a href="batchoverview.html">Previous: Batch Processor overview.</a>
 	</p>
 	<p CLASS="nextLink">
-		<a href="batchjobs.html">Next: Creating Batch Jobs.</a>
+		<a href="batchconfiguration_v.html">Next: Creating Offline Tasks.</a>
 	</p>
 	<br>
 	<br>

@@ -131,13 +131,13 @@ public class JobControlPanel extends BatchPanel {
 
 	protected void batchModeChange() {
 		BatchMode mode = (BatchMode) batchMode.getSelectedItem();
-		if (SMRUEnable.isDevEnable() == false && mode == BatchMode.VIEWER) {
-			WarnOnce.showWarning("Offline tasks not yet supported", 
-					"Currently only supporting raw data processing. Viewer offline tasks will follow shortly", 
-					WarnOnce.WARNING_MESSAGE);
-			batchMode.setSelectedIndex(0);
-			return;
-		}
+//		if (SMRUEnable.isDevEnable() == false && mode == BatchMode.VIEWER) {
+//			WarnOnce.showWarning("Offline tasks not yet supported", 
+//					"Currently only supporting raw data processing. Viewer offline tasks will follow shortly", 
+//					WarnOnce.WARNING_MESSAGE);
+//			batchMode.setSelectedIndex(0);
+//			return;
+//		}
 		batchParams = batchControl.getBatchParameters();
 		batchParams.setBatchMode(mode);
 		batchControl.settingsChange(SettingsObservers.CHANGE_RUNMODE);

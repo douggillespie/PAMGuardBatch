@@ -66,6 +66,7 @@ public class SwingMenus {
 			menuItem.setToolTipText("Extract configuration from database and use as master PSFX");
 		}
 		if (batchMode == BatchMode.NORMAL) {
+			popMenu.addSeparator();
 			boolean haveCal = jobInfo.arrayData != null;
 			if (haveCal == false) {
 				menuItem = new JMenuItem("Add job specific calibration / array data");

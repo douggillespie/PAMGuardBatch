@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<toc version="1.0">
+ <tocitem text="Utilities ">
+  <tocitem text="Batch Processing ">
+   <tocitem text="Overview " target="docs.batchoverview" image="topic"/>
+
+   <tocitem text="Configuration (Normal mode) " target="docs.batchconfiguration" image="topic"/>
+
+   <tocitem text="Configure Offline Tasks " target="docs.batchconfiguration_v" image="topic"/>
+
+   <tocitem text="Creating Jobs " target="docs.batchjobs" image="topic"/>
+
+   <tocitem text="Running " target="docs.batchrun" image="topic"/>
+
+  </tocitem>
+ </tocitem>
+</toc>

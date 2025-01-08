@@ -8,6 +8,8 @@
 
 <mapID target="docs.batchrun" url="docs/batchrun.html"/>
 
+<mapID target="docs.batchconfiguration_v" url="docs/batchconfiguration_v.html"/>
+
 <mapID target="docs.batchconfiguration" url="docs/batchconfiguration.html"/>
 
 <mapID target="index" url="index.html"/>
