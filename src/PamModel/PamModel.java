@@ -481,17 +481,17 @@ final public class PamModel implements PamSettings {
 //		mi = PamModuleInfo.registerControlledUnit(MetaDataContol.class.getName(), MetaDataContol.unitType);
 //		mi.setToolTipText("Project Meta Data");
 //		mi.setModulesMenuGroup(utilitiesGroup);
-//		mi.setMaxNumber(1); 
-		
+		//		mi.setMaxNumber(1); 
+
+		mi = PamModuleInfo.registerControlledUnit(TethysControl.class.getName(), TethysControl.defaultName);
+		mi.setToolTipText("Interface to Tethys Database");
+		mi.setModulesMenuGroup(utilitiesGroup);
+		mi.setMaxNumber(1);
+		//mi.addGUICompatabilityFlag(PamGUIManager.FX); //has FX enabled GUI.
+		mi.setHidden(!SMRUEnable.isEnable());
+		mi.setHelpPoint("utilities/tethys/docs/tethys_overview.html");
+
 		if (isViewer) {
-			mi = PamModuleInfo.registerControlledUnit(TethysControl.class.getName(), TethysControl.defaultName);
-			mi.setToolTipText("Interface to Tethys Database");
-			mi.setModulesMenuGroup(utilitiesGroup);
-			mi.setMaxNumber(1);
-			//mi.addGUICompatabilityFlag(PamGUIManager.FX); //has FX enabled GUI.
-			mi.setHidden(!SMRUEnable.isEnable());
-			mi.setHelpPoint("utilities/tethys/docs/tethys_overview.html");
-			
 			mi = PamModuleInfo.registerControlledUnit(RavenControl.class.getName(), RavenControl.defaultName);
 			mi.setToolTipText("Import data from Raven selection tables");
 			mi.setModulesMenuGroup(utilitiesGroup);

@@ -18,6 +18,7 @@ import PamView.dialog.warn.WarnOnce;
 import PamguardMVC.PamProcess;
 import pambatch.comms.BatchMulticastController;
 import pambatch.config.BatchJobInfo;
+import pambatch.config.BatchMode;
 import pambatch.config.MachineParameters;
 import pambatch.ctrl.JobController;
 import pambatch.ctrl.JobMonitor;
@@ -325,5 +326,24 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 			batchControl.getRemoteAgentHandler().getRemoteAgentDataBlock().updatePamData(remoteAgent, System.currentTimeMillis());
 		}
 	}
+
+	@Override
+	public boolean prepareProcessOK() {
+		String errorMsg;
+		if (batchControl.getBatchParameters().getBatchMode() == BatchMode.VIEWER) {
+			errorMsg = batchControl.viewerStartChecks();
+		}
+		else {
+			errorMsg = batchControl.normalStartChecks();
+		}
+		if (errorMsg == null) {
+			return true;
+		}
+		else {
+			WarnOnce.showWarning("Batch Processing Cannot Start", "Reason: " + errorMsg, WarnOnce.WARNING_MESSAGE);
+			return false;
+		}
+	}
+
 
 }

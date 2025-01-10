@@ -7,6 +7,9 @@ import Acquisition.AcquisitionControl;
 import Acquisition.AcquisitionParameters;
 import Acquisition.FolderInputParameters;
 import Acquisition.FolderInputSystem;
+import Array.ArrayManager;
+import Array.ArrayParameters;
+import Array.PamArray;
 import PamController.PSFXReadWriter;
 import PamController.PamControlledUnit;
 import PamController.PamControlledUnitSettings;
@@ -15,6 +18,7 @@ import PamController.PamSettingsGroup;
 import PamController.UsedModuleInfo;
 import PamModel.PamModel;
 import PamModel.PamModuleInfo;
+import PamView.dialog.warn.WarnOnce;
 import binaryFileStorage.BinaryStore;
 import binaryFileStorage.BinaryStoreSettings;
 import generalDatabase.DBControlSettings;
@@ -170,6 +174,22 @@ public class ViewerDatabase {
 		}
 		return binSettings;
 	}
+	
+	public PamArray getArray() {
+		PamControlledUnitSettings arraySet = findSettings(ArrayManager.arrayManagerType, ArrayManager.arrayManagerType);
+		if (arraySet == null) {
+			return null;
+		}
+		Object set = arraySet.getSettings();
+		if (set instanceof ArrayParameters) {
+			ArrayParameters ap = (ArrayParameters) set;
+			ArrayList<PamArray> arrays = ap.getArrayList();
+			if (arrays.size() > 0) {
+				return arrays.get(0);
+			}
+		}
+		return null;
+	}
 
 	public FolderInputParameters getDaqSettings() {
 		PamControlledUnitSettings aSet = findSettings(AcquisitionControl.unitType, null);
@@ -276,7 +296,7 @@ public class ViewerDatabase {
 	}
 
 	/**
-	 * Pull the full job info out of a viewer databse. 
+	 * Pull the full job info out of a viewer database. 
 	 * @param databaseFile
 	 * @return
 	 */
@@ -296,13 +316,58 @@ public class ViewerDatabase {
 		if (daqSettings != null) {
 			soundFolder = daqSettings.getMostRecentFile();
 		}
+		PamArray arrayInfo = viewDB.getArray();
 
 		// should probably worry if the binary store is empty ? Though it's possible that there
 		// is only database data. So let it pass. 
 		BatchJobInfo batchJobInfo = new BatchJobInfo(soundFolder, binFolder, databaseFile);
+		batchJobInfo.arrayData = arrayInfo;
 		return batchJobInfo;
 	}
 
+	/**
+	 * in viewer mode, rewrite array data back to it's database. <p>
+	 * Should only be called in viewer !
+	 * @param batchJobInfo
+	 * @return
+	 */
+	public static boolean rewriteArrayData(BatchJobInfo batchJobInfo) {
+		String dbName = batchJobInfo.outputDatabaseName;
+		File dbFile = new File(dbName);
+		if (dbFile.exists() == false) {
+			String err = String.format("The database %s does not exist", dbName);
+			WarnOnce.showWarning("Error writing array data to database", err, WarnOnce.WARNING_MESSAGE);
+			return false;
+		}
+		PamArray array = batchJobInfo.arrayData;
+		if (array == null) {
+			return false; // don't ever write a null array to one of the databases. 
+		}
+		ViewerDatabase viewDB = new ViewerDatabase(null, dbName);
+		PamSettingsGroup allSettings = viewDB.getSettings();
+		if (allSettings == null) {
+			return false;
+		}
+		PamControlledUnitSettings arraySet = viewDB.findSettings(ArrayManager.arrayManagerType, ArrayManager.arrayManagerType);
+		if (arraySet == null) {
+			return false;
+		}
+		Object set = arraySet.getSettings();
+		if (set instanceof ArrayParameters) {
+			ArrayParameters ap = (ArrayParameters) set;
+			ArrayList<PamArray> arrays = ap.getArrayList();
+			if (arrays.size() > 0) {
+				arrays.remove(0);
+			}
+			arrays.add(0, array);
+			// don't actually need to replace the settings, since we've modified the object in place. 
+			boolean ok = viewDB.reWriteSettings();
+			return ok;
+		}
+		else {
+			return false;
+		}
+	}
 	
 
 }

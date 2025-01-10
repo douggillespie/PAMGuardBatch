@@ -168,6 +168,9 @@ public class ExternalConfiguration implements SettingsObserver {
 
 		PamModel pamModel = PamController.getInstance().getModelInterface();
 		for (UsedModuleInfo unit : modulesList) {
+			if (unit.className.contains("tethys")) {
+				System.out.println("Add Tethys");
+			}
 			PamModuleInfo mi = PamModuleInfo.findModuleInfo(unit.className);
 			if (mi == null) {
 				System.out.println("Unable to find module info for " + unit.className);

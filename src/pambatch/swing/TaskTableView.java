@@ -1,9 +1,12 @@
 package pambatch.swing;
 
 import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import javax.swing.JButton;
 import javax.swing.JTable;
@@ -27,7 +30,7 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 	private BatchControl batchControl;
 	private TableCellRenderer tableRenderer;
 	
-	private JButton[] rowButtons = new JButton[0];
+	private HashMap<PamDataUnit, JButton> rowButtons = new HashMap();
 
 	public TaskTableView(BatchControl batchControl, PamDataBlock<OfflineTaskDataUnit> pamDataBlock, String displayName) {
 		super(pamDataBlock, displayName);
@@ -93,11 +96,11 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		case 3:
 			return task.getAffectedBlocksList();
 		case 4:
-			return taskSelection.selected;
+			return taskSelection.selected;// && task.canRun();
 		case 5:
 			if (task.hasSettings()) {
 //				return "Configure";
-				return getRowButton(0);
+				return getRowButton(dataUnit);
 			}
 		}
 		
@@ -118,7 +121,6 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 
 	@Override
 	public int getDataIndexForRow(int tableRow) {
-		// return natural order.
 		return tableRow;
 	}
 
@@ -141,7 +143,11 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			break;
 		case 5:
 //			System.out.println("Open settings for task " + dataUnit.getOfflineTask().getName());
-			batchControl.taskSettings(dataUnit.getOfflineTask());
+			JButton button = getRowButton(dataUnit);
+			if (button == null || button.isShowing()) {
+				return;
+			}
+			batchControl.taskSettings(e, dataUnit);
 //			if (dataUnit.getOfflineTask().hasSettings()) {
 //				dataUnit.getOfflineTask().callSettings();
 //			}
@@ -167,19 +173,64 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		super.popupMenuAction(e, dataUnit, colName);
 	}
 	
-	private JButton getRowButton(int row) {
+	private JButton getRowButton(OfflineTaskDataUnit dataUnit) {
 		// overkill. Don't actually need a button per row and the buttons don't 
 		// need an action listener since the response if off the clcik on the table row, not the button itself, 
 		// so use a single button and it's purely cosmetic. 
-		if (row >= rowButtons.length) {
-			rowButtons = Arrays.copyOf(rowButtons, row+1);
-			for (int i = 0; i < rowButtons.length; i++) {
-				if (rowButtons[i] == null) {
-					rowButtons[i] = new JButton("Configure Task");
-				}
+		JButton button = rowButtons.get(dataUnit);
+		if (button == null) {
+			button = new JButton("Configure Task");
+			rowButtons.put(dataUnit, button);
+			button.addActionListener(new ButtonAction(dataUnit));
+		}
+		return button;
+	}
+
+	private class ButtonAction implements ActionListener {
+
+		private OfflineTaskDataUnit dataUnit;
+
+		public ButtonAction(OfflineTaskDataUnit dataUnit) {
+			this.dataUnit = dataUnit;
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			System.out.println("Action for data unit " + dataUnit.getSummaryString());
+		}
+		
+	}
+	
+	@Override
+	public String getToolTipText(OfflineTaskDataUnit dataUnit, int columnIndex) {
+		// see if there is information about the task, such as a error code from the task. 
+		OfflineTask task = dataUnit.getOfflineTask();
+		JButton button = getRowButton(dataUnit);
+		/**
+		 * Need to check to see if it's a Tethys task. in which case it can't really 
+		 * run unless every job has a unique array identifier. This is probably better
+		 * done in the process though as a prestart check since it may take a bit longer ? 
+		 */
+		boolean can = task.canRun();
+		if (button != null) {
+			// don't disable the button since we need to press it to make it so it CAN run. 
+			// we should really be disabling the checkbox - but that doesn't actually exist, so we can't. 
+			button.setEnabled(true);
+		}
+		if (can == false) {
+			String err = task.whyNot();
+			if (err != null) {
+				return "Error! ! " + err;
+			}
+			else {
+				return "Task cannot run (reason unknown)";
 			}
 		}
-		return rowButtons[row];
+		// otherwise make up some standard text about each task. 
+//		String str = String.format("%s %s ", task.getParentControlledUnit().getUnitName(), task.getName());
+//		return str;
+		return task.getLongName();
+//		return super.getToolTipText(dataUnit, columnIndex);
 	}
 
 }

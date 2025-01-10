@@ -22,7 +22,7 @@ public class SwingMenus {
 		this.batchControl = batchControl;
 	}
 
-	public JPopupMenu getSwingPopupMenu(BatchDataUnit dataUnit) {
+	public JPopupMenu getJobsPopupMenu(BatchDataUnit dataUnit) {
 		
 		BatchMode batchMode = batchControl.getBatchParameters().getBatchMode();
 		
@@ -55,6 +55,16 @@ public class SwingMenus {
 			});
 		}
 		if (batchMode == BatchMode.VIEWER && jobInfo.outputDatabaseName != null) {
+			menuItem = new JMenuItem("Open with PAMGuard Viewer");
+			popMenu.add(menuItem);
+			menuItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.launchViewer(jobInfo.outputDatabaseName);
+				}
+			});
+			menuItem.setToolTipText("Open this dataset with the PAMGuard Viewer");
+			
 			menuItem = new JMenuItem("Extract configuration from database ...");
 			popMenu.add(menuItem);
 			menuItem.addActionListener(new ActionListener() {
@@ -65,34 +75,34 @@ public class SwingMenus {
 			});
 			menuItem.setToolTipText("Extract configuration from database and use as master PSFX");
 		}
-		if (batchMode == BatchMode.NORMAL) {
-			popMenu.addSeparator();
-			boolean haveCal = jobInfo.arrayData != null;
-			if (haveCal == false) {
-				menuItem = new JMenuItem("Add job specific calibration / array data");
-			}
-			else {
-				menuItem = new JMenuItem("Edit job specific calibration / array data");
-			}
-			menuItem.addActionListener(new ActionListener() {
-				
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					batchControl.editJobCalibration(dataUnit);
-				}
-			});
-			popMenu.add(menuItem);
-			menuItem = new JMenuItem("Delete job specific calibration / array data");
-			menuItem.setEnabled(haveCal);
-			menuItem.addActionListener(new ActionListener() {
-				
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					batchControl.deleteJobCalibration(dataUnit);
-				}
-			});
-			popMenu.add(menuItem);
+		//		if (batchMode == BatchMode.NORMAL) {
+		popMenu.addSeparator();
+		boolean haveCal = jobInfo.arrayData != null;
+		if (haveCal == false) {
+			menuItem = new JMenuItem("Add calibration / array data");
 		}
+		else {
+			menuItem = new JMenuItem("Edit calibration / array data");
+		}
+		menuItem.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				batchControl.editJobCalibration(dataUnit);
+			}
+		});
+		popMenu.add(menuItem);
+		menuItem = new JMenuItem("Delete job specific calibration / array data");
+		menuItem.setEnabled(haveCal);
+		menuItem.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				batchControl.deleteJobCalibration(dataUnit);
+			}
+		});
+		popMenu.add(menuItem);
+//		}
 //		JobController jobController = dataUnit.getJobController();
 //		if (jobController != null) {
 //			menuItem = new JMenuItem("Stop / Kill job");

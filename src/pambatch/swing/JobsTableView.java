@@ -19,10 +19,10 @@ import pambatch.config.SettingsObserver;
 public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements SettingsObserver {
 	
 
-	private String[]  colNames = {"Id", "Source", "Binary", "Database", "Calibration",  "Status", "Updated"};
+	private String[]  colNames = {"Id", "Source", "Binary", "Database", "Instrument / Array",  "Status", "Updated"};
 	
 	// changed column order for viewer mode. 
-	private int[] viewerOrder = {0, 3, 2, 1, 5, 6};
+	private int[] viewerOrder = {0, 3, 2, 1, 4, 5, 6};
 	private int[] normalOrder = {0, 1, 2, 3, 4, 5, 6};
 	
 	private String[] viewerColumns;
@@ -82,7 +82,7 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 
 	@Override
 	public void popupMenuAction(MouseEvent e, BatchDataUnit dataUnit, String colName) {
-		JPopupMenu popMenu = batchControl.getSwingPopupMenu(dataUnit);
+		JPopupMenu popMenu = batchControl.getJobsPopupMenu(dataUnit);
 		if (popMenu == null) {
 			return;
 		}
@@ -124,7 +124,13 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 			}
 			break;
 		case 4:
-			return jobInfo.arrayData == null ? "Default" : "Provided";
+			if (jobInfo.arrayData == null) {
+				return  "Default";
+			}
+			else {
+				String array = String.format("%s-%s", jobInfo.arrayData.getInstrumentType(), jobInfo.arrayData.getInstrumentId());
+				return array;
+			}
 		case 5:
 			BatchDataUnit conflict = dataUnit.getConflictingJob();
 			if (conflict != null) {
