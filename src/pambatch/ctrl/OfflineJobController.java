@@ -1,11 +1,13 @@
 package pambatch.ctrl;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
 import PamController.PamConfiguration;
 import PamController.PamControlledUnit;
 import PamController.PamControlledUnitSettings;
+import PamController.PamSettings;
 import PamController.PamSettingsGroup;
 import binaryFileStorage.BinaryStoreSettings;
 import offlineProcessing.OfflineTask;
@@ -144,13 +146,17 @@ public class OfflineJobController extends LocalJobController {
 			return;
 		}
 				
-		ArrayList<PamControlledUnitSettings> settings = extSettings.findSettingsForName(task.getUnitName());
+		ArrayList<PamSettings> settings = task.getSettingsProviders();
+//		ArrayList<PamControlledUnitSettings> settings = extSettings.findSettingsForName(task.getUnitName());
 		System.out.printf("Found %d settings for task type %s name %s\n", settings.size(), task.getUnitType(), task.getUnitName());
 		for (int i = 0; i < settings.size(); i++) {
-			PamControlledUnitSettings aSet = settings.get(i);
-			if (aSet == null) {
+			PamSettings aSetter = settings.get(i);
+			if (aSetter == null) {
 				System.out.printf("Found empty (therefore corrupt) settings for task type %s name %s at index %d\n", task.getUnitType(), task.getUnitName(), i);
 			}
+			Serializable obj = aSetter.getSettingsReference();
+			if (obj == null) continue;
+			PamControlledUnitSettings aSet = new PamControlledUnitSettings(aSetter.getUnitType(), aSetter.getUnitName(), obj.getClass().getName(), aSetter.getSettingsVersion(), obj);
 			boolean rep = viewDB.replaceSettings(aSet);
 			System.out.printf("\t%s, %s replaced %s\n", aSet.getUnitType(), aSet.getUnitName(), rep ? "ok" : "Fail");
 			// perhaps need to push these settings down to the thing using it, then they will get pu
