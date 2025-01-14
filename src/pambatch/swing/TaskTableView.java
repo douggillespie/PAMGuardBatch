@@ -9,7 +9,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 
 import PamController.PamControlledUnit;
@@ -31,6 +35,7 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 	private TableCellRenderer tableRenderer;
 	
 	private HashMap<PamDataUnit, JButton> rowButtons = new HashMap();
+	private HashMap<PamDataUnit, JCheckBox> rowCheckBoxs = new HashMap();
 
 	public TaskTableView(BatchControl batchControl, PamDataBlock<OfflineTaskDataUnit> pamDataBlock, String displayName) {
 		super(pamDataBlock, displayName);
@@ -39,6 +44,7 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		 
 		tableRenderer = getTable().getDefaultRenderer(JButton.class);
 		getTable().setDefaultRenderer(JButton.class, new JTableButtonRenderer(tableRenderer));
+		getTable().setDefaultRenderer(JCheckBox.class, new JTableButtonRenderer(tableRenderer));
 	      
 		
 		showViewerScrollControls(false);
@@ -96,7 +102,10 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		case 3:
 			return task.getAffectedBlocksList();
 		case 4:
-			return taskSelection.selected;// && task.canRun();
+//			return taskSelection.selected;// && task.canRun();
+			JCheckBox cb = getRowCheckBox(dataUnit);
+			cb.setSelected(taskSelection.selected);
+			return cb;
 		case 5:
 			if (task.hasSettings()) {
 //				return "Configure";
@@ -107,14 +116,31 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		return null;
 	}
 	
-	class JTableButtonRenderer implements TableCellRenderer {
+	class JTableButtonRenderer extends DefaultTableCellRenderer {
 		private TableCellRenderer defaultRenderer;
 		public JTableButtonRenderer(TableCellRenderer renderer) {
 			defaultRenderer = renderer;
 		}
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-			if(value instanceof Component)
+			if (column == 4) {
+				int a = 6+6;
+			}
+			int align = row == 4 ? SwingConstants.CENTER : SwingConstants.LEFT;
+			this.setHorizontalAlignment(align);
+			this.setHorizontalTextPosition(SwingConstants.CENTER);
+//			if (defaultRenderer instanceof DefaultTableCellRenderer) {
+//				DefaultTableCellRenderer dr = (DefaultTableCellRenderer) defaultRenderer;
+//				dr.setHorizontalAlignment(align);
+//			}
+			if(value instanceof Component) {
+//				align = SwingConstants.CENTER;
+//				this.setHorizontalAlignment(align);
+//				if (defaultRenderer instanceof DefaultTableCellRenderer) {
+//					DefaultTableCellRenderer dr = (DefaultTableCellRenderer) defaultRenderer;
+//					dr.setHorizontalAlignment(align);
+//				}
 				return (Component)value;
+			}
 			return defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 		}
 	}
@@ -137,9 +163,12 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		}
 		switch (selColumn) {
 		case 4:
-			TaskSelection taskSelection = batchControl.getBatchParameters().getTaskSelection(task);
-			taskSelection.selected = !taskSelection.selected; // flip the value
-			fireTableDataChanged();
+			JCheckBox cb = getRowCheckBox(dataUnit);
+			if (cb.isEnabled()) {
+				TaskSelection taskSelection = batchControl.getBatchParameters().getTaskSelection(task);
+				taskSelection.selected = !taskSelection.selected; // flip the value
+				fireTableDataChanged();
+			}
 			break;
 		case 5:
 //			System.out.println("Open settings for task " + dataUnit.getOfflineTask().getName());
@@ -147,7 +176,10 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			if (button == null || button.isShowing()) {
 				return;
 			}
-			batchControl.taskSettings(e, dataUnit);
+			boolean changed = batchControl.taskSettings(e, dataUnit);
+			if (changed) {
+				enableButtons();
+			}
 //			if (dataUnit.getOfflineTask().hasSettings()) {
 //				dataUnit.getOfflineTask().callSettings();
 //			}
@@ -155,12 +187,12 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		}
 		
 	}
-
+	
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
 		switch(columnIndex) {
 		case 4:
-			return Boolean.class;
+			return JCheckBox.class;
 		case 5:
 			return JButton.class;
 		}
@@ -172,7 +204,14 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		// TODO Auto-generated method stub
 		super.popupMenuAction(e, dataUnit, colName);
 	}
-	
+	private JCheckBox getRowCheckBox(OfflineTaskDataUnit dataUnit) {
+		JCheckBox cb = rowCheckBoxs.get(dataUnit);
+		if (cb == null) {
+			cb = new JCheckBox();
+			rowCheckBoxs.put(dataUnit, cb);
+		}
+		return cb;
+	}
 	private JButton getRowButton(OfflineTaskDataUnit dataUnit) {
 		// overkill. Don't actually need a button per row and the buttons don't 
 		// need an action listener since the response if off the clcik on the table row, not the button itself, 
@@ -196,11 +235,34 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("Action for data unit " + dataUnit.getSummaryString());
+//			System.out.println("Action for data unit " + dataUnit.getSummaryString());
 		}
 		
 	}
 	
+	/**
+	 * Try to enable the checkboxes based on state of settings for each task
+	 */
+	public void enableButtons() {
+		int rows = getRowCount();
+		for (int i = 0; i < rows; i++) {
+			OfflineTaskDataUnit du = getDataUnit(i);
+			enableTaskButton(du, i);
+		}
+	}
+
+	private void enableTaskButton(OfflineTaskDataUnit du, int rowIndex) {
+		OfflineTask task = du.getOfflineTask();
+		boolean en = task.canRun();
+		JCheckBox cb = getRowCheckBox(du);
+		cb.setEnabled(en);
+		if (en == false) {
+			TaskSelection taskSelection = batchControl.getBatchParameters().getTaskSelection(task);
+			taskSelection.selected = false;
+			cb.setSelected(false);
+		}
+	}
+
 	@Override
 	public String getToolTipText(OfflineTaskDataUnit dataUnit, int columnIndex) {
 		// see if there is information about the task, such as a error code from the task. 
@@ -231,6 +293,12 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 //		return str;
 		return task.getLongName();
 //		return super.getToolTipText(dataUnit, columnIndex);
+	}
+
+	@Override
+	public void fireTableDataChanged() {
+		super.fireTableDataChanged();
+		enableButtons();
 	}
 
 }

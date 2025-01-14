@@ -541,12 +541,12 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		command.add(DBControl.GlobalDatabaseNameArg); // viewer database. 
 		command.add(jobInfo.outputDatabaseName);
 		// and the psf since it will need to take the settings from it to override what's in the database. 
-		command.add("-psf");
-		String psf = batchParameters.getMasterPSFX();
-		command.add(psf);
+//		command.add("-psf");
+//		String psf = batchParameters.getMasterPSFX();
+//		command.add(psf);
 
 		if (jobInfo.soundFileFolder != null && jobInfo.soundFileFolder.length() > 0) {
-			command.add(psf);
+//			command.add(psf);
 			command.add(FolderInputSystem.GlobalWavFolderArg);
 			command.add(jobInfo.soundFileFolder);
 		}
@@ -1247,21 +1247,21 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 * will override any changes as soon as it's saved. 
 	 * @param offlineTask
 	 */
-	public void taskSettings(MouseEvent e, OfflineTaskDataUnit taskDataUnit) {
+	public boolean taskSettings(MouseEvent e, OfflineTaskDataUnit taskDataUnit) {
 		OfflineTask offlineTask = taskDataUnit.getOfflineTask();
 		if (offlineTask == null || offlineTask.hasSettings() == false) {
-			return; // nothing to be done anyway. 
+			return false; // nothing to be done anyway. 
 		}
 		PamControlledUnit parentModule = offlineTask.getParentControlledUnit();
 		if (parentModule == null) {
-			return;
+			return false;
 		}
 		boolean psfxOpen = isPSFXOpen();
 		if (psfxOpen) {
 			String msg = String.format("The configuration file %s is currently open.<br>" +
 					"Either make changes in the psfx file, or from the task table, but you can't do both." , batchParameters.getMasterPSFX());
 			WarnOnce.showWarning("Potential onfiguration change conflict", msg, WarnOnce.WARNING_MESSAGE);
-			return;
+			return false;
 		}
 		// see if the psfx is open in a process. 
 		boolean changed = offlineTask.callSettings(e.getComponent(), e.getPoint());
@@ -1288,6 +1288,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 				externalConfiguration.saveExtConfig();
 			}
 		}
+		return changed;
 		//	}
 
 	}
