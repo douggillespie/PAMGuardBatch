@@ -131,7 +131,7 @@ public class ViewerDatabase {
 	}
 
 	/**
-	 * rewrite the settings to the database. 
+	 * rewrite the settings to the database. Then close it.
 	 * @return true if it seems to have worked OK, false otherwise.  
 	 */
 	public boolean reWriteSettings() {

@@ -4,11 +4,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
+import Array.ArrayManager;
+import Array.ArrayParameters;
+import Array.PamArray;
 import PamController.PamConfiguration;
 import PamController.PamControlledUnit;
 import PamController.PamControlledUnitSettings;
 import PamController.PamSettings;
 import PamController.PamSettingsGroup;
+import PamView.dialog.warn.WarnOnce;
 import binaryFileStorage.BinaryStoreSettings;
 import offlineProcessing.OfflineTask;
 import pambatch.BatchControl;
@@ -20,6 +24,7 @@ import pambatch.remote.RemoteAgentDataUnit;
 import pambatch.tasks.OfflineTaskDataBlock;
 import pambatch.tasks.OfflineTaskDataUnit;
 import pambatch.tasks.TaskSelection;
+import tethys.species.SpeciesMapManager;
 
 /**
  * Job controller for offline tasks. Will require quite a different set of command line parameters
@@ -72,6 +77,22 @@ public class OfflineJobController extends LocalJobController {
 		BatchJobInfo jobInfo = getBatchDataUnit().getBatchJobInfo();
 		String dbName = jobInfo.outputDatabaseName;
 		ViewerDatabase viewDB = new ViewerDatabase(getBatchControl(), dbName);
+		
+		// always write the array settings if they are included in the Batch job configuration. 
+		PamArray arrayData = getBatchDataUnit().getBatchJobInfo().arrayData;
+		if (arrayData != null) {
+			PamControlledUnitSettings setUnit = viewDB.findSettings(ArrayManager.arrayManagerType, ArrayManager.arrayManagerType);
+			Object set = setUnit.getSettings();
+			if (set instanceof ArrayParameters) {
+				ArrayParameters ap = (ArrayParameters) set;
+				ArrayList<PamArray> arrays = ap.getArrayList();
+				if (arrays.size() > 0) {
+					arrays.remove(0);
+				}
+				arrays.add(0, arrayData);
+			}
+//			viewDB.rewriteArrayData(getBatchDataUnit().getBatchJobInfo());
+		}
 //		BinaryStoreSettings binSettings = viewDB.getBinarySettings();
 //		if (binSettings == null) {
 //			System.out.println("Unable to read settings from viewer database " + dbName);
@@ -108,7 +129,7 @@ public class OfflineJobController extends LocalJobController {
 	 * @param viewDB
 	 * @param task
 	 */
-	private void checkConfiguration(ViewerDatabase viewDB, OfflineTask task) {
+	private void checkConfiguration(ViewerDatabase viewDB, OfflineTask<?> task) {
 		PamControlledUnit taskCU = task.getTaskControlledUnit();
 		PamControlledUnitSettings exSettings = viewDB.findSettings(taskCU.getUnitType(), taskCU.getUnitName());
 		boolean haveModule = viewDB.hasModule(taskCU.getUnitType(), taskCU.getUnitName());
@@ -145,6 +166,7 @@ public class OfflineJobController extends LocalJobController {
 			System.out.println("No external psfx settings available. Can't do this !");
 			return;
 		}
+
 				
 		ArrayList<PamSettings> settings = task.getSettingsProviders();
 //		ArrayList<PamControlledUnitSettings> settings = extSettings.findSettingsForName(task.getUnitName());
@@ -155,6 +177,13 @@ public class OfflineJobController extends LocalJobController {
 				System.out.printf("Found empty (therefore corrupt) settings for task type %s name %s at index %d\n", task.getUnitType(), task.getUnitName(), i);
 			}
 			Serializable obj = aSetter.getSettingsReference();
+			if (aSetter instanceof SpeciesMapManager) {
+				System.out.println("setup species map manager");
+				SpeciesMapManager globalManager = SpeciesMapManager.getInstance();
+				// doesn't work because global maps can't find the datablocks to extract from. Grrrr.
+				obj = globalManager.getSettingsReference(extConfig.getExtConfiguration());
+//				obj = globalManager.getSettingsReference(extConfig.getExtConfiguration());
+			}
 			if (obj == null) continue;
 			PamControlledUnitSettings aSet = new PamControlledUnitSettings(aSetter.getUnitType(), aSetter.getUnitName(), obj.getClass().getName(), aSetter.getSettingsVersion(), obj);
 			boolean rep = viewDB.replaceSettings(aSet);
@@ -164,6 +193,7 @@ public class OfflineJobController extends LocalJobController {
 				viewDB.addSettings(aSet);
 			}
 		}
+		// settings are rewritten in function that called this one
 		System.out.println("");
 		
 	}
