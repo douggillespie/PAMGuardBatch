@@ -124,6 +124,15 @@ public class SwingMenus {
 				}
 			});
 		}
+		menuItem = new JMenuItem("Reprocess ALL jobs");
+		popMenu.add(menuItem);
+		menuItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				batchControl.reprocessAllJobs();
+			}
+		});
+		
 		
 		return popMenu;
 	};

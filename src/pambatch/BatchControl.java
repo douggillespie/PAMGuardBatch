@@ -555,6 +555,10 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			command.add(jobInfo.outputBinaryFolder);
 		}
 
+		if (batchParameters.isNoGUI()) {
+			command.add("-nogui");
+		}
+
 		//the job id stuff
 		command.add("-multicast");
 		command.add(batchParameters.getMulticastAddress());
@@ -1176,6 +1180,21 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		batchProcess.updateJobStatus(dataUnit);
 	}
 
+	/**
+	 * Reset all jobs for reprocessing
+	 */
+	public void reprocessAllJobs() {
+		BatchDataBlock jobs = getBatchProcess().getBatchDataBlock();
+		ListIterator<BatchDataUnit> it = jobs.getListIterator(0);
+		while (it.hasNext()) {
+			reprocessJob(it.next());
+		}
+	}
+
+	/**
+	 * Reset specified job for reprocessing
+	 * @param dataUnit
+	 */
 	public void reprocessJob(BatchDataUnit dataUnit) {
 		dataUnit.getBatchJobInfo().jobStatus = BatchJobStatus.NOTSTARTED;
 		batchProcess.updateJobStatus(dataUnit);	
