@@ -79,8 +79,12 @@ abstract public class JobDialog extends PamDialog {
 		c.gridwidth = 3;
 		int[] itemOrder = getSelectionOrder();
 		jobSets = new JobSet[itemOrder.length];
+		
+		BatchMode mode = batchControl.getBatchParameters().getBatchMode();
+		
 		for (int i = 0; i < jobSets.length; i++) {
-			addJobSet(itemOrder[i], mainPanel, c);
+			boolean showClear = itemOrder[i] != DATABASE && mode == BatchMode.VIEWER; 
+			addJobSet(itemOrder[i], mainPanel, showClear, c);
 			c.gridy++;
 		}
 		setResizable(false);
@@ -96,25 +100,41 @@ abstract public class JobDialog extends PamDialog {
 	 */
 	public abstract int[] getSelectionOrder();
 
-	private void addJobSet(int i, JPanel mainPanel, GridBagConstraints c) {
+	private void addJobSet(int i, JPanel mainPanel, boolean showClear, GridBagConstraints c) {
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		JPanel topPanel = new JPanel(new BorderLayout());
+		JPanel topEast = new JPanel(new GridBagLayout());
+		GridBagConstraints c2 = new PamGridBagContraints();
 		topPanel.add(BorderLayout.WEST, new JLabel(sectionNames[i]));
-		JButton selButton;
-		topPanel.add(BorderLayout.EAST, selButton = new JButton("Select"));
+		topPanel.add(BorderLayout.EAST, topEast);
+		
+		JButton selButton, clearButton = null;;
+		topEast.add(selButton = new JButton("Select"), c2);
 		selButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				selectButton(i);
 			}
 		});
+		if (showClear) {
+			clearButton = new JButton("Clear");
+			c2.gridx++;
+			topEast.add(clearButton, c2);
+			clearButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					clearField(i);
+				}
+			});
+		}
+		
 		panel.add(topPanel);
 		JTextField mainField = new JTextField(60);
 		mainField.setToolTipText(tipName[i]);
 		panel.add(mainField);
 		mainPanel.add(panel, c);
-		jobSets[i] = new JobSet(mainField, selButton);
+		jobSets[i] = new JobSet(mainField, selButton, clearButton);
 	}
 	
 	protected JobSet getJobSet(int type) {
@@ -136,6 +156,10 @@ abstract public class JobDialog extends PamDialog {
 		if (change) {
 			selectionChanged(iSet);
 		}
+	}
+
+	private void clearField(int i) {
+		jobSets[i].mainField.setText(null);
 	}
 
 	protected abstract void selectionChanged(int iSet);
@@ -252,10 +276,13 @@ abstract public class JobDialog extends PamDialog {
 		private JTextField mainField;
 
 		private JButton selectbutton;
+		
+		private JButton clearButton;
 
-		private JobSet(JTextField mainField, JButton selButton) {
+		private JobSet(JTextField mainField, JButton selButton, JButton clearButton) {
 			this.mainField = mainField;
 			this.selectbutton = selButton;
+			this.clearButton = clearButton;
 			mainField.setEditable(false);
 		}
 
