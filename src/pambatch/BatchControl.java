@@ -913,6 +913,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		boolean ok = showJobDialog(dataUnit);
 		if (ok) {
 			batchProcess.getBatchDataBlock().updatePamData(dataUnit, System.currentTimeMillis());
+			checkConflictingJobs();
 		}
 	}
 
