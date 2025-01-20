@@ -87,6 +87,25 @@
 	<p>If you want to delete multiple jobs, it's sometimes easier to close PAMGuard and delete jobs from the 
 	BatchJobs table.</p>
 	
+	<h3>Cheating</h3>
+	<p>Sometimes, the job creation functions aren't quite what you need, or only partially does the job. For example,
+	what if you're setting up jobs for processing offline tasks, and the binary data locations extracted from your
+	set of databases are no no longer valid due to an external hard drive change ? You can edit each job individually
+	by right clicking on each job on the display, 
+	which is OK if there are only a few of them, but if there are many dozens, for instance from a large deployment
+	of autonomous recorders, you might want to change the file locations directly in the batch processor database. </p>
+	<p>PAMGuard will have locked access to the database, so close PAMGuard, then alter the table "Batch_Processing". You can
+	do this manually, but you might also write a script in R or Matlab to alter the data for you. If adding new records, rather than 
+	just changing existing ones, make
+	sure that their Id and UID are unique, and as a minimum, fill out the columns Id, UID, UTC (it doesn't really matter what
+	you put, so long as it's a valid date time), Source (not strictly necessary for offline tasks), Binary, and Database.</p>  
+	<p>One thing you can't change in this way is the Array Data for each job. That's because this bit of data is a stored (serialized)
+	Java object which can only be read from Java when the correct PAMGuard array class definitions are available. It's not impossible to automate
+	changing these, but is more difficult. In short, you'll need to write your own PAMGuard plugin module which has access to the 
+	PAMGuard classes, and therefore 'knows' what data it wants
+	to enter for the hydrophone data, and can write those objects directly the to the database. If you think you need to do this
+	please contact PAMGuard support.</p> 
+	
 	<br><br>
 	<p CLASS="nextLink"><a href="batchconfiguration.html">Previous: Configuring the batch processor.</a>
 	<p CLASS="prevtLink"><a href="batchrun.html">Next: Running batch jobs.</a>
