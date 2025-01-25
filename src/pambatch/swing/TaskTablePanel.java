@@ -58,6 +58,9 @@ public class TaskTablePanel implements BatchJobsPanel, SettingsObserver {
 		if (changeType == SettingsObservers.CHANGE_RUNMODE) {
 			mainPanel.setVisible(batchControl.getBatchParameters().getBatchMode() == BatchMode.VIEWER);
 		}
+		if (mainPanel.isVisible()) {
+			taskTableView.fireTableDataChanged();
+		}
 	}
 
 }

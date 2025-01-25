@@ -7,6 +7,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.JPopupMenu;
 import javax.swing.Timer;
 
+import Array.PamArray;
 import PamUtils.PamCalendar;
 import PamView.component.DataBlockTableView;
 import PamguardMVC.PamDataBlock;
@@ -124,13 +125,7 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 			}
 			break;
 		case 4:
-			if (jobInfo.arrayData == null) {
-				return  "Default";
-			}
-			else {
-				String array = String.format("%s-%s", jobInfo.arrayData.getInstrumentType(), jobInfo.arrayData.getInstrumentId());
-				return array;
-			}
+			return getArrayString(dataUnit);
 		case 5:
 			BatchDataUnit conflict = dataUnit.getConflictingJob();
 			if (conflict != null) {
@@ -157,6 +152,20 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 			}
 		}
 		return null;
+	}
+	
+	private String getArrayString(BatchDataUnit batchDataUnit) {
+		BatchJobInfo jobInfo = batchDataUnit.getBatchJobInfo();
+		if (jobInfo.arrayData == null) {
+			PamArray extArray = batchControl.getExternalConfiguration().findArrayData();
+			if (extArray != null) {
+				String st = String.format("Default: %s-%s", extArray.getInstrumentType(), extArray.getInstrumentId());
+				return st;
+			}
+		}
+		// array set for this specific one job. 
+		String array = String.format("Set: %s-%s", jobInfo.arrayData.getInstrumentType(), jobInfo.arrayData.getInstrumentId());
+		return array;
 	}
 
 	@Override

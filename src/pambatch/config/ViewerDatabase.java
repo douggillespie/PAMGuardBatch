@@ -48,7 +48,7 @@ public class ViewerDatabase {
 
 	public ViewerDatabase(BatchControl batchControl, String databaseName) {
 		this.batchControl = batchControl;
-		this.databaseName = databaseName;
+		this.databaseName = batchControl.checkDatabasePath(databaseName);;
 		dbCtrlSettings = new DBControlSettings();
 	}
 
@@ -60,6 +60,7 @@ public class ViewerDatabase {
 	}
 
 	private PamSettingsGroup extractSettings(String databaseName) {
+		databaseName = batchControl.checkDatabasePath(databaseName);
 		boolean dbOpen = dbCtrlSettings.openDatabase(databaseName);
 		if (dbOpen == false) {
 			return null;
@@ -68,7 +69,7 @@ public class ViewerDatabase {
 		if (con == null) {
 			return null;
 		}
-		ArrayList<PamControlledUnitSettings> settings = dbCtrlSettings.loadSettingsFromDB(con);
+		ArrayList<PamControlledUnitSettings> settings = dbCtrlSettings.loadSettingsFromDB(con, true);
 		dbCtrlSettings.pamClose();
 		return new PamSettingsGroup(System.currentTimeMillis(), settings);
 	}
@@ -135,6 +136,7 @@ public class ViewerDatabase {
 	 * @return true if it seems to have worked OK, false otherwise.  
 	 */
 	public boolean reWriteSettings() {
+		databaseName = batchControl.checkDatabasePath(databaseName);
 		boolean dbOpen = dbCtrlSettings.openDatabase(databaseName);
 		if (dbOpen == false) {
 			return false;
@@ -260,6 +262,7 @@ public class ViewerDatabase {
 	}
 
 	public void extractPSFX() {
+		databaseName = batchControl.checkDatabasePath(databaseName);
 		dbSettings = extractSettings(databaseName);
 		if (dbSettings == null) {
 			return;
@@ -331,8 +334,9 @@ public class ViewerDatabase {
 	 * @param batchJobInfo
 	 * @return
 	 */
-	public static boolean rewriteArrayData(BatchJobInfo batchJobInfo) {
+	public static boolean rewriteArrayData(BatchControl batchControl, BatchJobInfo batchJobInfo) {
 		String dbName = batchJobInfo.outputDatabaseName;
+		dbName = batchControl.checkDatabasePath(dbName);
 		File dbFile = new File(dbName);
 		if (dbFile.exists() == false) {
 			String err = String.format("The database %s does not exist", dbName);

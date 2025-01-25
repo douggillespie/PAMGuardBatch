@@ -20,12 +20,17 @@ import PamController.PamSettingsGroup;
 import PamController.UsedModuleInfo;
 import PamModel.PamModel;
 import PamModel.PamModuleInfo;
+import PamView.dialog.warn.WarnOnce;
+import metadata.MetaDataContol;
+import metadata.PamguardMetaData;
+import nilus.Deployment;
 import offlineProcessing.OfflineTask;
 import offlineProcessing.OfflineTaskManager;
 import pambatch.BatchControl;
 import pambatch.BatchDataUnit;
 import pambatch.tasks.OfflineTaskDataBlock;
 import pambatch.tasks.OfflineTaskDataUnit;
+import tethys.niluswraps.NilusSettingsWrapper;
 
 public class ExternalConfiguration implements SettingsObserver {
 
@@ -51,6 +56,7 @@ public class ExternalConfiguration implements SettingsObserver {
 		switch (changeType) {
 		case SettingsObservers.CHANGE_CONFIG:
 			loadExtConfig();
+			checkExternalMetaData();
 			break;
 		}
 	}
@@ -337,5 +343,62 @@ public class ExternalConfiguration implements SettingsObserver {
 		return sg;
 	}
 
+	/**
+	 * Push the project metadata to the external configuration. 
+	 * @param metaData
+	 */
+	public boolean pushMetaData(PamguardMetaData metaData) {
+		// TODO Auto-generated method stub
+		if (settingsGroup == null) {
+			settingsGroup = getSettingsGroup(true);
+		}
+		if (settingsGroup == null) {
+			return false;
+		}
+		PamControlledUnitSettings metaSettings = settingsGroup.findUnitSettings(MetaDataContol.unitType, MetaDataContol.unitType);
+		if (metaSettings == null) {
+			return false;
+		}
+		NilusSettingsWrapper<Deployment> wrapper = metaData.getDeploymentWrapper();
+		wrapper.repackNilusObject();
+		metaSettings.setSettings(metaData);
+		return saveExtConfig();
+	}
+	
+	/**
+	 * Get metadata settings out of external configuration. 
+	 * @return external metadata settings. 
+	 */
+	public PamguardMetaData getExternalMetaData() {
+		if (settingsGroup == null) {
+			settingsGroup = getSettingsGroup(true);
+		}
+		if (settingsGroup == null) {
+			return null;
+		}
+		PamControlledUnitSettings metaSettings = settingsGroup.findUnitSettings(MetaDataContol.unitType, MetaDataContol.unitType);
+		if (metaSettings.getSettings() instanceof PamguardMetaData) {
+			return (PamguardMetaData) metaSettings.getSettings();
+		}
+		return null;
+	}
+
+	/**
+	 * Called on a settings change. 
+	 */
+	private void checkExternalMetaData() {
+		MetaDataContol metaControl = MetaDataContol.getMetaDataControl();
+		PamguardMetaData extMetaData = getExternalMetaData();
+		if (metaControl == null || extMetaData == null) {
+			return;
+		}
+		int ans = WarnOnce.showWarning("External configuratin metadata", 
+				"Do you want to copy external meta data to the internal data within tha batch processor configuration ?",
+				WarnOnce.YES_NO_OPTION);
+		if (ans == WarnOnce.OK_OPTION) {
+			metaControl.setMetaData(extMetaData);
+		}
+	}
+	
 
 }

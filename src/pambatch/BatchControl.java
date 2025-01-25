@@ -47,12 +47,16 @@ import PamController.command.StartCommand;
 import PamController.command.TerminalController;
 import PamController.fileprocessing.ReprocessStoreChoice;
 import PamController.settings.output.xml.PamguardXMLWriter;
+import PamUtils.PamFileChooser;
+import PamUtils.PamFileFilter;
 import PamView.PamTabPanel;
 import PamView.dialog.warn.WarnOnce;
 import PamguardMVC.dataOffline.OfflineDataLoadInfo;
 import binaryFileStorage.BinaryStore;
 import generalDatabase.DBControl;
 import generalDatabase.DBControlUnit;
+import metadata.MetaDataContol;
+import metadata.PamguardMetaData;
 import networkTransfer.send.NetworkSender;
 import offlineProcessing.OfflineTask;
 import offlineProcessing.OfflineTaskManager;
@@ -76,6 +80,7 @@ import pambatch.swing.SwingMenus;
 import pambatch.swing.ViewerSetDialog;
 import pambatch.tasks.OfflineTaskDataBlock;
 import pambatch.tasks.OfflineTaskDataUnit;
+import pambatch.tasks.OfflineTaskFunctions;
 import pambatch.tasks.TaskSelection;
 import pamguard.GlobalArguments;
 import pamguard.Pamguard;
@@ -109,6 +114,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	private ExternalConfiguration externalConfiguration;
 
 	private PSFXMonitor psfxMonitor;
+	
+	private OfflineTaskFunctions offlineTaskFunctions;
 
 	/**
 	 * @return the batchProcess
@@ -132,6 +139,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		//		System.out.println("Java command is " + findJavaCommand());
 
 		externalConfiguration = new ExternalConfiguration(this);
+		
+		offlineTaskFunctions = new OfflineTaskFunctions(this);
 
 		PamSettingManager.getInstance().registerSettings(this);
 		swingMenus = new SwingMenus(this);
@@ -171,6 +180,32 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			loadExistingJobs(); // loads from database
 			checkRunningJobs();
 			externalConfiguration.settingsUpdate(SettingsObservers.CHANGE_CONFIG);
+		}
+		if (changeType == PamController.PROJECT_META_UPDATE) {
+			intlMetaDataUpdate();
+		}
+	}
+
+	/**
+	 * Meta data in this batch processor config has been changed. Should this
+	 * be pushed to the external configuration ? 
+	 */
+	private void intlMetaDataUpdate() {
+		PamguardMetaData metaData = MetaDataContol.getMetaDataControl().getMetaData();
+		if (metaData == null) {
+			return; // I don't this this is possible, but just in case. 
+		}
+		if (isPSFXOpen()) {
+			WarnOnce.showWarning("Project metadata", 
+					"Meta data cannot be pushed to external configuration because the external contriguration is currently open", WarnOnce.WARNING_MESSAGE);
+			return;
+		}
+		// otherwise push these changes to the external congig. 
+		int ans = WarnOnce.showWarning("Project metadata", 
+				"Do you want to push your changes to the project metadata to the external configuration?", WarnOnce.YES_NO_OPTION);
+		if (ans == WarnOnce.OK_OPTION) {
+			// push the internal meta to external. 
+			externalConfiguration.pushMetaData(metaData);
 		}
 	}
 
@@ -396,6 +431,29 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		t.start();
 
 	}
+	
+	/**
+	 * Check a database name. In normal batch mode, these can 
+	 * be without their .sqlite ending, so don't exist. This causes
+	 * trouble when you switch to Viewer mode<p>
+	 * Not creating, but looking to see if we can find something. 
+	 * @param startName name which may not have  afile end. 
+	 * @return name with file end if found, otherwis original. 
+	 */
+	public String checkDatabasePath(String startPath) {
+		File aFile = new File(startPath);
+		if (aFile.exists()) {
+			return startPath;
+		}
+		String[] possEnds = {".sqlite3"};
+		for (int i = 0; i < possEnds.length; i++) {
+			File newPath = PamFileFilter.checkFileEnd(aFile, possEnds[i], true);
+			if (newPath.exists()) {
+				return newPath.getAbsolutePath();
+			}
+		}
+		return startPath;
+	}
 
 	public void launchViewer(String outputDatabaseName) {
 		List<String> pgExe = findStartExecutable();
@@ -403,9 +461,10 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			pgExe = new ArrayList<>();
 			pgExe.add("C:\\Program Files\\Pamguard\\Pamguard.exe");
 		}
-		File dbFile = new File(outputDatabaseName);
+		String path = checkDatabasePath(outputDatabaseName);
+		File dbFile = new File(path);
 		if (dbFile.exists() == false) {
-			WarnOnce.showWarning("Can't launch PAMGuard viewer", "The database " + outputDatabaseName + " does not exist", WarnOnce.WARNING_MESSAGE);
+			WarnOnce.showWarning("Can't launch PAMGuard viewer", "The database " + path + " does not exist", WarnOnce.WARNING_MESSAGE);
 			return;
 		}
 
@@ -413,7 +472,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		command.addAll(pgExe);
 		command.add("-v");
 		command.add(DBControl.GlobalDatabaseNameArg);
-		command.add(outputDatabaseName);
+		command.add(path);
 //		if (batchParameters.getBatchMode() == BatchMode.VIEWER) {
 //			command.add(GlobalArguments.BATCHVIEW); // batchview mode. Will load the psfx, but then pretend it's in viewer mode.  
 //		}
@@ -539,7 +598,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		command.add("-v"); // viewer mode
 		command.add(GlobalArguments.BATCHFLAG);
 		command.add(DBControl.GlobalDatabaseNameArg); // viewer database. 
-		command.add(jobInfo.outputDatabaseName);
+		command.add(checkDatabasePath(jobInfo.outputDatabaseName));
 		// and the psf since it will need to take the settings from it to override what's in the database. 
 //		command.add("-psf");
 //		String psf = batchParameters.getMasterPSFX();
@@ -1312,21 +1371,39 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		//	}
 
 	}
+	
+	/**
+	 * find which array is set for a specific job. 
+	 * Will first check specific data for the job, then external confit
+	 * then give up and give the batch configs array (shouldn't happen). 
+	 * @param dataUnit
+	 * @return
+	 */
+	public PamArray findJobArray(BatchDataUnit dataUnit) {
+		PamArray array = dataUnit.getBatchJobInfo().arrayData;
+		if (array != null) {
+			return array;
+		}
+		if (externalConfiguration != null) {
+			array = externalConfiguration.findArrayData();
+			if (array != null) {
+				return array;
+			}
+		}
+		return ArrayManager.getArrayManager().getCurrentArray();
+	}
 
 	public void editJobCalibration(BatchDataUnit dataUnit) {
-		PamArray array = dataUnit.getBatchJobInfo().arrayData;
-		if (array == null) {
-			if (externalConfiguration == null) {
-				return;
-			}
-			array = externalConfiguration.findArrayData();
-		}
-		if (array == null) { // this should be impossible
-			array = ArrayManager.getArrayManager().getCurrentArray();
-		}
+		PamArray array = findJobArray(dataUnit);
 		if (array == null) { // this should definitely be impossible
 			return;
 		}
+		/*
+		 * Clone it, becuase if it was the default, then all jobs will
+		 * be modifying the same object. 
+		 * The array.clone() function should do a deep clone. 
+		 */
+		array = array.clone();
 		// use the array dialog to make edits. 
 		array = ArrayDialog.showDialog(getGuiFrame(), null, array);
 		if (array != null) {
@@ -1335,7 +1412,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			batchProcess.updateJobStatus(dataUnit);
 			if (batchParameters.getBatchMode() == BatchMode.VIEWER) {
 				// save the change back into the viewer databse itself. 
-				ViewerDatabase.rewriteArrayData(dataUnit.getBatchJobInfo());
+				ViewerDatabase.rewriteArrayData(this, dataUnit.getBatchJobInfo());
 			}
 		}
 	}
@@ -1440,6 +1517,10 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			return "No configuration for batch jobs has been set";
 		}
 		return null;
+	}
+
+	public OfflineTaskFunctions getOfflineTaskFunctions() {
+		return offlineTaskFunctions;
 	}
 
 }

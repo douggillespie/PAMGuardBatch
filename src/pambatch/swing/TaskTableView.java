@@ -24,6 +24,7 @@ import PamguardMVC.PamDataUnit;
 import offlineProcessing.OfflineTask;
 import pambatch.BatchControl;
 import pambatch.tasks.OfflineTaskDataUnit;
+import pambatch.tasks.OfflineTaskFunctions;
 import pambatch.tasks.TaskSelection;
 
 public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
@@ -178,7 +179,7 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			}
 			boolean changed = batchControl.taskSettings(e, dataUnit);
 			if (changed) {
-				enableButtons();
+				fireTableDataChanged();
 			}
 //			if (dataUnit.getOfflineTask().hasSettings()) {
 //				dataUnit.getOfflineTask().callSettings();
@@ -253,7 +254,9 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 
 	private void enableTaskButton(OfflineTaskDataUnit du, int rowIndex) {
 		OfflineTask task = du.getOfflineTask();
-		boolean en = task.canRun();
+		OfflineTaskFunctions taskFuncs = batchControl.getOfflineTaskFunctions();
+		String problem = taskFuncs.canRun(du);
+		boolean en = problem == null;
 		JCheckBox cb = getRowCheckBox(du);
 		cb.setEnabled(en);
 		if (en == false) {
@@ -261,6 +264,18 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 			taskSelection.selected = false;
 			cb.setSelected(false);
 		}
+	}
+	
+	/**
+	 * Some extra checks for Tethys output. 
+	 * Primarily ensuring that the hydrophone array and project 
+	 * information data are set. 
+	 * @param aTask
+	 * @return
+	 */
+	private String extraTethysChecks(OfflineTask aTask) {
+		// where even is project information for Tethys ? Local or remote ? 
+		return null;
 	}
 
 	@Override
@@ -273,20 +288,16 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 		 * run unless every job has a unique array identifier. This is probably better
 		 * done in the process though as a prestart check since it may take a bit longer ? 
 		 */
-		boolean can = task.canRun();
+		OfflineTaskFunctions taskFuncs = batchControl.getOfflineTaskFunctions();
+		String problem = taskFuncs.canRun(dataUnit);
+		boolean can = (problem == null);
 		if (button != null) {
 			// don't disable the button since we need to press it to make it so it CAN run. 
 			// we should really be disabling the checkbox - but that doesn't actually exist, so we can't. 
 			button.setEnabled(true);
 		}
-		if (can == false) {
-			String err = task.whyNot();
-			if (err != null) {
-				return "Error! ! " + err;
-			}
-			else {
-				return "Task cannot run (reason unknown)";
-			}
+		if (problem != null) {
+			return problem;
 		}
 		// otherwise make up some standard text about each task. 
 //		String str = String.format("%s %s ", task.getParentControlledUnit().getUnitName(), task.getName());
@@ -297,8 +308,8 @@ public class TaskTableView extends DataBlockTableView<OfflineTaskDataUnit> {
 
 	@Override
 	public void fireTableDataChanged() {
-		super.fireTableDataChanged();
 		enableButtons();
+		super.fireTableDataChanged();
 	}
 
 }
