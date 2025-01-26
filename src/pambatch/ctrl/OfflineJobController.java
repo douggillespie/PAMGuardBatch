@@ -75,7 +75,7 @@ public class OfflineJobController extends LocalJobController {
 	 */
 	private boolean modifyDatabaseConfiguration() {
 		BatchJobInfo jobInfo = getBatchDataUnit().getBatchJobInfo();
-		String dbName = jobInfo.outputDatabaseName;
+		String dbName = getBatchControl().checkDatabasePath(jobInfo.outputDatabaseName);
 		ViewerDatabase viewDB = new ViewerDatabase(getBatchControl(), dbName);
 		
 		// always write the array settings if they are included in the Batch job configuration. 

@@ -155,17 +155,24 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 	}
 	
 	private String getArrayString(BatchDataUnit batchDataUnit) {
-		BatchJobInfo jobInfo = batchDataUnit.getBatchJobInfo();
-		if (jobInfo.arrayData == null) {
-			PamArray extArray = batchControl.getExternalConfiguration().findArrayData();
-			if (extArray != null) {
-				String st = String.format("Default: %s-%s", extArray.getInstrumentType(), extArray.getInstrumentId());
-				return st;
-			}
+		PamArray jobArray = batchControl.findJobArray(batchDataUnit);
+		if (jobArray == null) {
+			return null;
 		}
+		String type = "Default";
+		BatchJobInfo jobInfo = batchDataUnit.getBatchJobInfo();
+		if (jobInfo.arrayData != null) {
+			type = "Set";
+		}
+//			PamArray extArray = batchControl.getExternalConfiguration().findArrayData();
+//			if (extArray != null) {
+//				String st = String.format("Default: %s-%s", extArray.getInstrumentType(), extArray.getInstrumentId());
+//				return st;
+//			}
+//		}
 		// array set for this specific one job. 
-		String array = String.format("Set: %s-%s", jobInfo.arrayData.getInstrumentType(), jobInfo.arrayData.getInstrumentId());
-		return array;
+		String str = String.format("%s: %s-%s", type, jobArray.getInstrumentType(), jobArray.getInstrumentId());
+		return str;
 	}
 
 	@Override

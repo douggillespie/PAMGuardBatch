@@ -25,6 +25,7 @@ public class SwingMenus {
 	public JPopupMenu getJobsPopupMenu(BatchDataUnit dataUnit) {
 		
 		BatchMode batchMode = batchControl.getBatchParameters().getBatchMode();
+		BatchJobInfo jobInfo = dataUnit.getBatchJobInfo();
 		
 		JPopupMenu popMenu = new JPopupMenu();
 		JMenuItem menuItem = new JMenuItem("Delete Job");
@@ -43,40 +44,7 @@ public class SwingMenus {
 				batchControl.editJob(dataUnit);
 			}
 		});
-		BatchJobInfo jobInfo = dataUnit.getBatchJobInfo();
-		if (jobInfo.jobStatus == BatchJobStatus.RUNNING) {
-			menuItem = new JMenuItem("Stop and close ...");
-			popMenu.add(menuItem);
-			menuItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					batchControl.cancelJob(dataUnit);
-				}
-			});
-		}
-		if (batchMode == BatchMode.VIEWER && jobInfo.outputDatabaseName != null) {
-			menuItem = new JMenuItem("Open with PAMGuard Viewer");
-			popMenu.add(menuItem);
-			menuItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					batchControl.launchViewer(jobInfo.outputDatabaseName);
-				}
-			});
-			menuItem.setToolTipText("Open this dataset with the PAMGuard Viewer");
-			
-			menuItem = new JMenuItem("Extract configuration from database ...");
-			popMenu.add(menuItem);
-			menuItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					batchControl.extractDatabaseConfiguration(jobInfo.outputDatabaseName);
-				}
-			});
-			menuItem.setToolTipText("Extract configuration from database and use as master PSFX");
-		}
-		//		if (batchMode == BatchMode.NORMAL) {
-		popMenu.addSeparator();
+
 		boolean haveCal = jobInfo.arrayData != null;
 		if (haveCal == false) {
 			menuItem = new JMenuItem("Add calibration / array data");
@@ -102,6 +70,43 @@ public class SwingMenus {
 			}
 		});
 		popMenu.add(menuItem);
+		
+		if (jobInfo.jobStatus == BatchJobStatus.RUNNING) {
+			menuItem = new JMenuItem("Stop and close ...");
+			popMenu.add(menuItem);
+			menuItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.cancelJob(dataUnit);
+				}
+			});
+		}
+		
+		menuItem = new JMenuItem("Open with PAMGuard Viewer");
+		popMenu.add(menuItem);
+		menuItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				batchControl.launchViewer(jobInfo.outputDatabaseName);
+			}
+		});
+		menuItem.setEnabled((jobInfo.jobStatus == BatchJobStatus.COMPLETE || batchMode == BatchMode.VIEWER) && jobInfo.outputDatabaseName != null);
+		menuItem.setToolTipText("Open this dataset with the PAMGuard Viewer");
+
+			if (batchMode == BatchMode.VIEWER && jobInfo.outputDatabaseName != null) {
+			
+			menuItem = new JMenuItem("Extract configuration from database ...");
+			popMenu.add(menuItem);
+			menuItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					batchControl.extractDatabaseConfiguration(jobInfo.outputDatabaseName);
+				}
+			});
+			menuItem.setToolTipText("Extract configuration from database and use as master PSFX");
+		}
+		//		if (batchMode == BatchMode.NORMAL) {
+		popMenu.addSeparator();
 //		}
 //		JobController jobController = dataUnit.getJobController();
 //		if (jobController != null) {

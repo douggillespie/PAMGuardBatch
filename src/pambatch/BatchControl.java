@@ -289,16 +289,18 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		List<String> arg = new ArrayList();
 		String userDir = System.getProperty("user.dir");
 		if (userDir != null) {
-			File userFile = new File(userDir+File.pathSeparator+"Pamguard.exe");
+			File userFile = new File(userDir+File.separator+"Pamguard.exe");
 			if (userFile.exists()) {
 				arg.add(userFile.getAbsolutePath());
 				return arg;
 			}
+			System.out.println("Unable to find PAMGuard executable in user.dir: " + userFile.getAbsolutePath());
 		}
 		// try the default location. 
 		File tryDir = new File(DEFAULTWINDOWSEXE);
 		if (tryDir.exists()) {
 			arg.add(tryDir.getAbsolutePath());
+			return arg;
 		}
 		// give up !
 		return null;

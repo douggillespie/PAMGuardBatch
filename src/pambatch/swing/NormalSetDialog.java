@@ -184,7 +184,7 @@ public class NormalSetDialog extends BatchSetDialog {
 			return null;
 		}
 		String lastName = sourceFolder.getName();
-		String binName = binaryRoot.getAbsolutePath() + File.separator + lastName + "binary";
+		String binName = binaryRoot.getAbsolutePath() + File.separator + lastName + "_binary";
 		return binName;
 	}
 
@@ -229,7 +229,7 @@ public class NormalSetDialog extends BatchSetDialog {
 			return null;
 		}
 		String lastName = sourceFolder.getName();
-		String dbName = databaseRoot.getAbsolutePath() + File.separator + lastName + "database";
+		String dbName = databaseRoot.getAbsolutePath() + File.separator + lastName + "_database";
 		
 		return dbName;
 	}

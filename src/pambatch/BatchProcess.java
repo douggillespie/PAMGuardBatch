@@ -155,8 +155,14 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		private boolean checkMachineJobs(RemoteAgentDataUnit remoteAgent, ArrayList<BatchDataUnit> batchJobs) {
 			MachineParameters machineParams = batchControl.getBatchParameters().getMachineParameters(remoteAgent.getComputerName());
 			// get number running AND starting, otherwise it starts the whole lot in one go.
-			int nRunning = countRunningJobs(remoteAgent) + countJobState(BatchJobStatus.STARTING, remoteAgent);
-			remoteAgent.setRunningCount(nRunning);
+			int nRunning = countActiveJobs(remoteAgent);
+//			checkAgentStatus(remoteAgent);
+//			if (nRunning != remoteAgent.getRunningCount()) {
+//			System.out.println("Set running count to " + nRunning);
+//			remoteAgent.setRunningCount(nRunning);
+//			
+//			}
+			
 			if (machineParams.isEnabled() == false) {
 				return false;
 			}
@@ -199,6 +205,15 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 	 */
 	private int countRunningJobs(RemoteAgentDataUnit remoteAgent) {
 		return countJobState(BatchJobStatus.RUNNING, remoteAgent);
+	}
+	
+	/**
+	 * Get the number of active jobs - that's the number starting and running. 
+	 * @param remoteAgent
+	 * @return
+	 */
+	private int countActiveJobs(RemoteAgentDataUnit remoteAgent) {
+		return countJobState(BatchJobStatus.RUNNING, remoteAgent) + countJobState(BatchJobStatus.STARTING, remoteAgent);
 	}
 
 	/**
@@ -314,13 +329,14 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 		batchDataBlock.updatePamData(batchDataUnit, System.currentTimeMillis());
 	}
 
-	private void checkAgentStatus(RemoteAgentDataUnit remoteAgent) {
+	public void checkAgentStatus(RemoteAgentDataUnit remoteAgent) {
 		if (remoteAgent == null) {
 			return;
 		}
 		int nOld = remoteAgent.getRunningCount();
-		int nNew = countRunningJobs(remoteAgent);
+		int nNew = countActiveJobs(remoteAgent);
 		if (nOld != nNew) {
+//			System.out.printf("Set running count from %d to %d\n", nOld, nNew);
 			remoteAgent.setRunningCount(nNew);
 			// fires table update in GUI
 			batchControl.getRemoteAgentHandler().getRemoteAgentDataBlock().updatePamData(remoteAgent, System.currentTimeMillis());

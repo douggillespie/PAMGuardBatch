@@ -99,6 +99,9 @@ public class RemoteAgentHandler implements BatchStateObserver {
 		case INITIALISATIONCOMPLETE:
 		case NEWSETTING:
 			restartSocket();
+		case JOBFINISH:
+		case JOBSTART:
+			
 		}
 	}
 
