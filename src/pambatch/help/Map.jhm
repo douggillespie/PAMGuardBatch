@@ -10,13 +10,21 @@
 
 <mapID target="docs.batchconfiguration_v" url="docs/batchconfiguration_v.html"/>
 
+<mapID target="docs.batchconfiguration_v_extract" url="docs/batchconfiguration_v.html#extract"/>
+
 <mapID target="docs.batchconfiguration" url="docs/batchconfiguration.html"/>
 
-<mapID target="index" url="index.html"/>
+<mapID target="docs.batchdiy" url="docs/batchdiy.html"/>
+
+<mapID target="docs.batchjobs_calibration" url="docs/batchjobs.html#calibration"/>
 
 <mapID target="docs.batchjobs" url="docs/batchjobs.html"/>
 
 <mapID target="docs.batchoverview" url="docs/batchoverview.html"/>
+
+<mapID target="docs.batchjobs_editing" url="docs/batchjobs.html#editing"/>
+
+<mapID target="docs.batchconfiguration_v_changes" url="docs/batchconfiguration_v.html#changes"/>
 
 <mapID target="docs.images.popup" url="docs/images/popup.gif"/>
 

@@ -1,0 +1,63 @@
+<html>
+
+<head>
+	<LINK href="../pamHelpStylesheet.css" type="text/css" rel="STYLESHEET">
+	<title>Batch Processing</title>
+</head>
+
+<body>
+
+	<h1>Batch Processing</h1>
+	<h2>DIY Batch Control</h2>
+		
+	<p>While the batch processor module is useful if you're working on a desktop computer, the functions built 
+	into PAMGuard to support batch processing can be controlled from other languages and it should be
+	able to set up PAMGuard jobs to run on a server.</p>
+	
+	<p>Effectively, all that the batch processor is doing, is launching PAMGuard with a lot of extra command line 
+	options. For instance, the command line of a typical job (from the batch processing tutorial) might be something like: </p>
+	<pre> 
+	"-batch" "-psf"
+	"C:\ProjectData\Compass\compass_settings_static_logger_Job1.psfx"
+	"-wavfilefolder" "C:\ProjectData\Compass\soundtrapdata\Hyskeir"
+	"-binaryfolder" "C:\ProjectData\Compass\PAMGuardOutput\Hyskeir_binary"
+	"-databasefile"
+	"C:\ProjectData\Compass\PAMGuardOutput\Hyskeir_database" "-autostart"
+	"-reprocessoption" "CONTINUECURRENTFILE" 
+	"-multicast" "230.1.1.1" "12346" 
+	"-netSend.id1" "1" "-netSend.id2" "5054" 
+	</pre>
+	<p>The meanings of these commands are <a href="https://github.com/douggillespie/PAMGuard/wiki/Command-Line">documented on GitHub</a>
+	<p>
+	As an example, the Matlab code below will search for folders of wav files and then run the same
+	configuration on each folder of wav's, using the folder name to generate binary folder and database names. </p>
+	<pre>
+	root = 'C:\ProjectData\DCLDE2024\';
+	psfx = 'C:\ProjectData\DCLDE2024\dclde2024rw.psfx';
+	pgExe = 'C:\Program Files\Pamguard\Pamguard.exe'
+	subdirs = dir(root);
+	for i  = 1:numel(subdirs)
+    	if (subdirs(i).isdir == false)
+    		continue
+    	end
+    	subPath = fullfile(root, subdirs(i).name);
+    	wavs = dir([subPath, '\*.wav']);
+    	if numel(wavs) == 0
+        	continue
+    	end
+    	% now make a new binary folder name and database name based on the path
+    	binName = fullfile(root,  [subdirs(i).name, 'binary']);
+    	dbName = fullfile(root,  [subdirs(i).name, 'database.sqlite3']);
+    	% see https://github.com/douggillespie/PAMGuard/wiki/Command-Line
+    	commandOpts = sprintf('-psf "%s" -wavfilefolder "%s" -binaryfolder "%s" -databasefile "%s" -autostart -autoexit', ...
+       		psfx, subPath, binName, dbName);
+    	fullCmd = sprintf('"%s" %s', pgExe, commandOpts);
+   		pgOut{i} = system(fullCmd);
+    	fprintf('completed PAMGuard run on %s\n', subdirs(i).name)
+	end
+	</pre>  
+	 
+	
+	<br>
+	<p CLASS="prevLink">Previous: <a href="batchjobs.html">Creating Batch Jobs.</a></p>
+</body>

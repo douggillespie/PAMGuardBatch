@@ -83,7 +83,9 @@ public class JobsTableView extends DataBlockTableView<BatchDataUnit> implements 
 
 	@Override
 	public void popupMenuAction(MouseEvent e, BatchDataUnit dataUnit, String colName) {
-		JPopupMenu popMenu = batchControl.getJobsPopupMenu(dataUnit);
+//		% columns are all in wrong order. 
+		
+		JPopupMenu popMenu = batchControl.getJobsPopupMenu(dataUnit, colName);
 		if (popMenu == null) {
 			return;
 		}

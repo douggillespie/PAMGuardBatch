@@ -1,7 +1,10 @@
 package pambatch.swing;
 
+import java.awt.Desktop;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
 
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
@@ -22,7 +25,14 @@ public class SwingMenus {
 		this.batchControl = batchControl;
 	}
 
-	public JPopupMenu getJobsPopupMenu(BatchDataUnit dataUnit) {
+	/**
+	 * Get a swing menu for the given job and possibly also column name clicked in the
+	 * jobs table. 
+	 * @param dataUnit job data unit
+	 * @param colName job column name. 
+	 * @return
+	 */
+	public JPopupMenu getJobsPopupMenu(BatchDataUnit dataUnit, String colName) {
 		
 		BatchMode batchMode = batchControl.getBatchParameters().getBatchMode();
 		BatchJobInfo jobInfo = dataUnit.getBatchJobInfo();
@@ -92,9 +102,47 @@ public class SwingMenus {
 		});
 		menuItem.setEnabled((jobInfo.jobStatus == BatchJobStatus.COMPLETE || batchMode == BatchMode.VIEWER) && jobInfo.outputDatabaseName != null);
 		menuItem.setToolTipText("Open this dataset with the PAMGuard Viewer");
+		
+		if (colName != null) {
+			String openPath = null;
+			String locType = null;
+			switch (colName) {
+			case "Database":
+				openPath = jobInfo.outputDatabaseName;
+				locType = "output";
+				break;
+			case "Binary":
+				openPath = jobInfo.outputBinaryFolder;
+				locType = "output";
+				break;
+			case "Source":
+				openPath = jobInfo.soundFileFolder;
+				locType = "data source";
+				break;
+			}
+			if (openPath != null) {
+				File path = new File(openPath);
+				while (path != null) {
+					// we want the folder, not the file
+					if (path.isFile() || path.exists() == false) {
+						path = path.getParentFile();
+					}
+					else {
+						break;
+					}
+				}
+				if (path != null && path.isDirectory()) {
+					// set up a menu to open this with Explorer. 
+					menuItem = new JMenuItem(String.format("Open %s location \"%s\"", locType, path.getName()));
+					menuItem.setToolTipText(String.format("Open %s folder ", locType,  path.getAbsolutePath()));
+					menuItem.addActionListener(new OpenFolder(path));
+					popMenu.add(menuItem);
+				}
+			}
+		}
 
-			if (batchMode == BatchMode.VIEWER && jobInfo.outputDatabaseName != null) {
-			
+		if (batchMode == BatchMode.VIEWER && jobInfo.outputDatabaseName != null) {
+
 			menuItem = new JMenuItem("Extract configuration from database ...");
 			popMenu.add(menuItem);
 			menuItem.addActionListener(new ActionListener() {
@@ -142,4 +190,23 @@ public class SwingMenus {
 		return popMenu;
 	};
 
+	private class OpenFolder implements ActionListener {
+		 
+		private File folder;
+
+		public OpenFolder(File folder) {
+			super();
+			this.folder = folder;
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			try {
+				Desktop.getDesktop().open(folder);
+			} catch (Exception ex) {
+				// TODO Auto-generated catch block
+//				e1.printStackTrace();
+			}
+		}
+	}
 }

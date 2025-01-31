@@ -69,6 +69,7 @@ import pambatch.config.SettingsObservers;
 import pambatch.config.ViewerDatabase;
 import pambatch.ctrl.BatchState;
 import pambatch.ctrl.BatchStateObserver;
+import pambatch.ctrl.JobController;
 import pambatch.remote.RemoteAgentHandler;
 import pambatch.swing.NormalSetDialog;
 import pambatch.swing.BatchTabPanel;
@@ -469,6 +470,16 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			WarnOnce.showWarning("Can't launch PAMGuard viewer", "The database " + path + " does not exist", WarnOnce.WARNING_MESSAGE);
 			return;
 		}
+		
+		// change it to the viewer exe !
+		for (int i = 0; i < pgExe.size(); i++) {
+			String st = pgExe.get(i);
+			if (st.contains("Pamguard.exe")) {
+				st = st.replace("Pamguard.exe", "Pamguard_ViewerMode.exe");
+				pgExe.remove(i);
+				pgExe.add(i,st);
+			}
+		}
 
 		final ArrayList<String> command = new ArrayList<String>();
 		command.addAll(pgExe);
@@ -478,16 +489,37 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 //		if (batchParameters.getBatchMode() == BatchMode.VIEWER) {
 //			command.add(GlobalArguments.BATCHVIEW); // batchview mode. Will load the psfx, but then pretend it's in viewer mode.  
 //		}
-
-		final ProcessBuilder builder = new ProcessBuilder(command);
+		
+		String oneLine = JobController.getOneLineCommand(command);
+		System.out.println("Launching viewer: " + oneLine);
+		
+		// ProcessBuilder was REALLY slow unless I full connect up the output streams, which I don't want to do.
+		// so try Runtime
+		Runtime runTime = Runtime.getRuntime();
 		Process process = null;
+//		Object[] lst = command.toArray();
+		String[] asStr = new String[command.size()];
+		for (int i = 0; i < command.size(); i++) {
+			asStr[i] = command.get(i);
+		}
 		try {
-			process = builder.start();
+			process = runTime.exec(asStr);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+//		process.
 
+//		final ProcessBuilder builder = new ProcessBuilder(command);
+		
+//		try {
+//			process = builder.start();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//
+		System.out.println("Viewer launch process builder returned " + process);
 	}
 
 	/**
@@ -949,10 +981,11 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	/**
 	 * Make a swing menu for use probably in the table view of jobs. 
 	 * @param dataUnit
+	 * @param colName 
 	 * @return
 	 */
-	public JPopupMenu getJobsPopupMenu(BatchDataUnit dataUnit) {
-		return swingMenus.getJobsPopupMenu(dataUnit);
+	public JPopupMenu getJobsPopupMenu(BatchDataUnit dataUnit, String colName) {
+		return swingMenus.getJobsPopupMenu(dataUnit, colName);
 	}
 
 	/**

@@ -88,7 +88,7 @@ public abstract class JobController {
 	 * @param totalCommand
 	 * @return
 	 */
-	public String getOneLineCommand(ArrayList<String> totalCommand) {
+	public static String getOneLineCommand(ArrayList<String> totalCommand) {
 		if (totalCommand == null || totalCommand.size() == 0) {
 			return null;
 		}
