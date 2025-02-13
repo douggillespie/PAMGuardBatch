@@ -12,6 +12,10 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -272,6 +276,10 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 	 */
 	public List<String> findStartExecutable() {
 
+//		List<String> jCommand = getJavaCommand();
+//		if (jCommand != null) {
+//			return jCommand;
+//		}
 		// first look to see if we're running from the IDE and if so, also launch
 		// new configs from the ide
 		if (isBuildEnvironment()) {
@@ -285,9 +293,21 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 				return arg;
 			}
 		}
+		
+//		if (jCommand != null) {
+//			return jCommand;
+//		}
 
-		// first look in the current directory and see if it's there. 
 		List<String> arg = new ArrayList();
+
+		String currExe = findCurrentExecutable();
+		if (currExe != null) {
+			System.out.println("PAMGuard Executable is " + currExe);
+			arg.add(currExe);
+			return arg;
+		}
+		
+		// first look in the current directory and see if it's there. 
 		String userDir = System.getProperty("user.dir");
 		if (userDir != null) {
 			File userFile = new File(userDir+File.separator+"Pamguard.exe");
@@ -304,6 +324,146 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			return arg;
 		}
 		// give up !
+		return null;
+	}
+	
+	/**
+	 * Make up the launch command using java commands. 
+	 * @return
+	 */
+	private List<String> getJavaCommand() {
+		/*
+		 * 
+		String commandLine = String.format("\"%s\" -Dname=AutoPamguard -Xms%dm -Xmx%dm -Djava.library.path=%s %s -jar \"%s\"", 
+				params.getJre(),
+				params.getMsMemory(), params.getMxMemory(), 
+				params.getLibFolder(), params.getOtherVMOptions(), params.getJavaFile());
+		 */
+		ArrayList<String> args = new ArrayList();
+		try {
+			String jHome = System.getProperty("java.home");
+			File javaFile = findFile(new File(jHome), "java.exe", true, 1);
+			URL jarFile = Pamguard.class.getProtectionDomain().getCodeSource().getLocation();
+			File jarFile2 = new File(jarFile.toURI());
+			String libPath = System.getProperty("java.library.path");
+			Runtime r = Runtime.getRuntime();
+			long max = r.maxMemory();
+			max = max>>20;
+			if (max == 0) {
+				max = 4096;
+			}
+			args.add(javaFile.getAbsolutePath());
+			args.add("-jar " + jarFile2.getAbsolutePath());
+//			args.add("-m/pamguard.Pamguard");
+			args.add("-Dname=AutoPamguard");
+			args.add(String.format("-Xmx%dm", max));
+			args.add(String.format("-Djava.library.path=%s", libPath));
+
+			String oneLine = JobController.getOneLineCommand(args);
+			System.out.println(oneLine);
+			
+			return args;
+		}
+		catch (Exception e) {
+			return null;
+		}
+	}
+	
+	/**
+	 * Copied from PAMDog to search for a file in a folder structure. 
+	 * @param root
+	 * @param filePattern
+	 * @param searchSubDirs
+	 * @param minSize
+	 * @return
+	 */
+	public File findFile(File root, String filePattern, boolean searchSubDirs, long minSize) {	
+		/**
+		 * Find a file. Ones we'll need to find automatically are the 
+		 * PAMGuard main jar file and the the Java executable. PAMDog should now be
+		 * running from the same root folder as the PAMGuard installation,so hopefully
+		 * we at least know where to start the search now. 
+		 * For the java runtime, it's always caled java.exe so it's just a case of 
+		 * searching the folder structure (should be in C:\Program Files\Pamguard\jre64\bin)
+		 * For the main PAMGuard jar it may be more complicated since it's name
+		 * will vary with version number, e.g. Pamguard-2.02.03.jar and if we're messing
+		 * with it, there may be multiple versions. 
+		 * Also need to fine the working directory (which is the current directory). 
+		 * For PAMGuard, is it worth taking the details from the ini file ? Not a bad place to start, 
+		 * so find the ini file and read from there ...
+		 * 
+		 */
+		if (root.exists() == false) {
+			return null;
+		}
+		String pattern = "glob:" + filePattern;
+		PathMatcher matcher = FileSystems.getDefault().getPathMatcher(pattern);
+		File[] files = root.listFiles();
+		for (int i = 0; i < files.length; i++) {
+			File aFile = files[i];
+			if (aFile.isDirectory()) {
+				continue;
+			}
+			if (getFileSize(aFile) < minSize) {
+				continue;
+			}
+			if (aFile.getName().endsWith("java.exe")) {
+				System.out.println(filePattern);
+			}
+			Path namePath = new File(aFile.getName()).toPath();
+//					(aFile.getName());
+			if (matcher.matches(namePath)) {
+				return aFile;
+			}
+		}
+		for (int i = 0; i < files.length; i++) {
+			File aFile = files[i];
+			if (!aFile.isDirectory()) {
+				continue;
+			}
+			File foundFile = findFile(aFile, filePattern, searchSubDirs, minSize);
+			if (foundFile != null) {
+				return foundFile;
+			}
+		}
+		return null;
+	}	
+	private long getFileSize(File aFile) {
+		long size = 0;
+		try {
+			size = Files.size(aFile.toPath());
+		} catch (IOException e) {
+		}
+		return size;
+	}
+	
+	/**
+	 * Fine executable. 
+		String userDir = System.getProperty("user.dir"); is no good since 
+		it returns the folder of the psfx if launched from there. 
+	 * @return
+	 */
+	public String findCurrentExecutable() {
+		String javaExe = null;
+		try {
+			// get the java runnable file name. 
+			//	    	http://stackoverflow.com/questions/4294522/jar-file-name-form-java-code
+			URL javaFile = Pamguard.class.getProtectionDomain().getCodeSource().getLocation();
+			System.out.println(javaFile);
+			javaExe = javaFile.getPath();
+			System.out.println("Java file from Protectiondomain is " + javaExe);
+			File exeFile = new File(javaFile.toURI());
+			// now go up one
+			exeFile = exeFile.getParentFile();
+			exeFile = new File(exeFile.getAbsolutePath() + File.separator + "Pamguard.exe");
+			if (exeFile.exists()) {
+				return exeFile.getAbsolutePath();
+			}
+
+		} catch (Exception e) {
+			return null;
+		}
+		
 		return null;
 	}
 
