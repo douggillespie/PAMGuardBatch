@@ -52,17 +52,9 @@ public class PSFXControlPanel extends BatchPanel {
 
 	private BatchControl batchControl;
 
-	private BatchParameters batchParams;
-
 	private JCheckBox noGUI;
 
 	private JButton helpButton;
-
-	// private JTextField jreName;
-	//
-	// private JTextField maxMemory;
-	//
-	// private JTextField vmOptions;
 
 	public PSFXControlPanel(BatchControl batchControl) {
 		super(batchControl, new BorderLayout());
@@ -155,7 +147,6 @@ public class PSFXControlPanel extends BatchPanel {
 
 	@Override
 	public void setParams(BatchParameters batchParams) {
-		this.batchParams = batchParams;
 		psfxName.setText(batchParams.getMasterPSFX());
 		this.useThisPSFX.setSelected(batchParams.useThisPSFX);
 
@@ -186,6 +177,7 @@ public class PSFXControlPanel extends BatchPanel {
 	}
 
 	private void setNoGUI() {
+		BatchParameters batchParams = batchControl.getBatchParameters();
 		if (batchParams != null) {
 			batchParams.setNoGUI(noGUI.isSelected());
 		}
@@ -193,12 +185,14 @@ public class PSFXControlPanel extends BatchPanel {
 
 	protected void setUseThisPsfx() {
 		enableControls();
+		BatchParameters batchParams = batchControl.getBatchParameters();
 		if (batchParams != null) {
 			batchParams.useThisPSFX = useThisPSFX.isSelected();
 		}
 	}
 
 	private boolean hasPSFX() {
+		BatchParameters batchParams = batchControl.getBatchParameters();
 		if (batchParams == null) {
 			return false;
 		}
@@ -209,6 +203,7 @@ public class PSFXControlPanel extends BatchPanel {
 	}
 
 	protected void browsePSFX() {
+		BatchParameters batchParams = batchControl.getBatchParameters();
 		PamFileChooser pamFileChooser = new PamFileChooser();
 		pamFileChooser.setFileFilter(new PamFileFilter("PAMGuard Configuration Files", "psfx"));
 		int ret = pamFileChooser.showOpenDialog(this);

@@ -138,6 +138,8 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 
 	private static final String DEFAULTWINDOWSEXE = "C:\\Program Files\\Pamguard\\Pamguard.exe";
 
+	private static final String DEFAULTMACAPPLICATION = null;
+
 	public BatchControl(String unitName) {
 		super(unitType, unitName);
 		//		System.out.println("Exe command is " + findStartExecutable());
@@ -163,8 +165,23 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 		randomJobId = new Random(System.currentTimeMillis());
 
 		audioFileFilter.addFileType(".glf");
+		
+		checkBatchView();
 
 		//		batchMulticastRX = new BatchMulticastRX(this);
+	}
+
+	/**
+	 * Check this isn't the batch run configuration. 
+	 */
+	private void checkBatchView() {
+		String isBV = GlobalArguments.getParam(GlobalArguments.BATCHVIEW);
+		if (isBV == null) {
+			return;
+		}
+		String wt = "This appears to be the Batch Process run configuration, which should NOT contain a Batch Processor module. \n"
+				+ "Please remove it from your configuration";
+		WarnOnce.showWarning("Configuration Error", wt, WarnOnce.WARNING_MESSAGE);
 	}
 
 	@Override
@@ -289,7 +306,7 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			}
 			else {
 				List<String> arg = new ArrayList();
-				arg.add("C:\\Program Files\\Pamguard\\Pamguard.exe");
+				arg.add(getDefaultPlatformProgram());
 				return arg;
 			}
 		}
@@ -318,13 +335,33 @@ public class BatchControl extends PamControlledUnit implements PamSettings {
 			System.out.println("Unable to find PAMGuard executable in user.dir: " + userFile.getAbsolutePath());
 		}
 		// try the default location. 
-		File tryDir = new File(DEFAULTWINDOWSEXE);
+		File tryDir = new File(getDefaultPlatformProgram());
 		if (tryDir.exists()) {
 			arg.add(tryDir.getAbsolutePath());
 			return arg;
 		}
 		// give up !
 		return null;
+	}
+	
+	/**
+	 * Get the default program for a platform. 
+	 * @return
+	 */
+	private String getDefaultPlatformProgram() {
+		try {
+			String os = System.getProperty("os.name").toLowerCase();
+			if (os.startsWith("windows")) {
+				return DEFAULTWINDOWSEXE;
+			}
+			if (os.startsWith("mac")) {
+				return DEFAULTMACAPPLICATION;
+			}
+		}
+		catch (Exception e) {
+			
+		}
+		return DEFAULTWINDOWSEXE;
 	}
 	
 	/**
