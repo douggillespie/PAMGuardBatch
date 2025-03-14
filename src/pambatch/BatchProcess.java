@@ -321,10 +321,9 @@ public class BatchProcess extends PamProcess implements JobMonitor {
 	public void updateJobStatus(BatchDataUnit batchDataUnit) {
 		// check the agent too. 
 		JobController ctrler = batchDataUnit.getJobController();
-		if (ctrler == null) {
-			return;
+		if (ctrler != null) {
+			checkAgentStatus(ctrler.getRemoteAgent());
 		}
-		checkAgentStatus(ctrler.getRemoteAgent());
 		
 		batchDataBlock.updatePamData(batchDataUnit, System.currentTimeMillis());
 	}
