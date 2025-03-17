@@ -149,7 +149,7 @@ public class PSFXControlPanel extends BatchPanel {
 	public void setParams(BatchParameters batchParams) {
 		psfxName.setText(batchParams.getMasterPSFX());
 		this.useThisPSFX.setSelected(batchParams.useThisPSFX);
-
+		noGUI.setSelected(batchParams.isNoGUI());
 		enableControls();
 		setToolTips();
 	}
