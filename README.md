@@ -3,8 +3,10 @@
 PAMGuard Batch processing control
 
 Software to control batch processing of one or more PAMGuard datasets, e.g. processing data from many similar autonomous recorders using the same congifuration file, but with each recorders data being in a different place and being written to a different database and binary store, etc. 
+
 Will handle resets after PAMGuard crashes (if ever !) and other nice features such as Windows restarts. 
 
+Note that the current version only runs on Windows. We hope to have a Mac compatible version in the near future. 
 
 
 [Installation instructions.](https://www.pamguard.org/plugins/plugins.html) 
