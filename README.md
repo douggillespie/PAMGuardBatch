@@ -6,11 +6,11 @@ Will handle resets after PAMGuard crashes (if ever !) and other nice features su
 
 This will (for now) be a PAMGuard plug in module while I try out a few things, but the code will mostly be written to run stand alone if in the future we want to run the process control on headless platforms. 
 
-[Click here](https://www.pamguard.org/plugins/plugins.html) for installation instructions.
+[Installation instructions.](https://www.pamguard.org/plugins/plugins.html) 
 
-[Click here](https://www.pamguard.org/plugins/batchprocessor.html) for built module download. 
+[Built module download.](https://www.pamguard.org/plugins/batchprocessor.html) 
 
-[Click here](https://www.pamguard.org/batchhelp/docs/batchoverview.html) for online help.
+[Online help.](https://www.pamguard.org/batchhelp/docs/batchoverview.html)
 
 ## Version 2.0
 
