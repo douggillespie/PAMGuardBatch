@@ -13,6 +13,8 @@
 
    <tocitem text="Running " target="docs.batchrun" image="topic"/>
 
+   <tocitem text="DIY Batch Control " target="docs.batchdiy" image="topic"/>
+
   </tocitem>
  </tocitem>
 </toc>
