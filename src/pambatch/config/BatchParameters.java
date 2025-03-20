@@ -53,6 +53,9 @@ public class BatchParameters  implements Serializable, Cloneable{
 	
 	private HashMap<String, TaskSelection> offlineTasks = new HashMap<>();
 	
+	// count of offline task selections in display. Needed to set 
+	public int offlineViewCount = 0;
+	
 //	/**
 //	 * List of datasets to hit with this process. 
 //	 */
